@@ -1,0 +1,11 @@
+.env
+
+artifacts/
+cache-hardhat/
+cache/
+out/
+
+node_modules
+
+coverage/
+coverage.json
