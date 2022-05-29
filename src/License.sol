@@ -63,7 +63,7 @@ contract License is ERC721, Auth {
       lastSold = 1;
     } 
 
-    
+
     /// @notice Mints a specified amount of tokens if msg sender is a license holder. 
     /// @param amount Amount of tokens to be minted.
     function mint(uint256 amount) external requiresAuth {
@@ -178,7 +178,7 @@ contract License is ERC721, Auth {
       return false; 
     }
     
-    /// TODO: return our API along with specific information about token in it e.g. expiry time.
+    // / TODO: return our API along with specific information about token in it e.g. expiry time.
     function tokenURI(uint256 tokenId)
         public
         view
