@@ -24,9 +24,6 @@ contract AccessToken is ERC721, Auth {
     /// @notice Total supply of token.
     uint256 public totalSupply;
 
-    /// @notice Whether the Vault has been initialized yet.
-    bool public isInitialized;
-
     /// @notice Struct of token data.
     /// @param expiryDate Date where token expires.
     /// @param minter Address of license holder who minted the token.
@@ -52,9 +49,6 @@ contract AccessToken is ERC721, Auth {
     /// @param buyer address of the buyer of the token.
     event TokenSold(uint256 id, address buyer);
 
-    /// @notice Emitted after the contract is initialized. 
-    event Initialized();
-
     /// @notice Maps id to struct that holds info of it.
     mapping(uint256 => TokenData) public getTokenData;
 
@@ -67,6 +61,9 @@ contract AccessToken is ERC721, Auth {
         string memory _name,
         string memory _symbol,
         string memory _baseURI,
+        uint256 _expiryTime,
+        uint256 _maxSupply,
+        uint256 _price,
         Authority _authority
     ) ERC721(
       // e.g. GEB Access
@@ -76,8 +73,10 @@ contract AccessToken is ERC721, Auth {
     )
     Auth(Auth(msg.sender).owner(), _authority) {
       baseURI = _baseURI;
-      /// Sets supply to max and disable minting until initialized.
-      totalSupply = type(uint256).max;
+      totalSupply = 0;
+      expiryTime = _expiryTime;
+      maxSupply = _maxSupply;
+      price = _price;
     } 
 
     /// @notice Mints a specified amount of tokens if msg sender is a license holder. 
@@ -134,8 +133,6 @@ contract AccessToken is ERC721, Auth {
     /// @param supply New max supply.
     function setMaxSupply(uint256 supply) external {
       require(msg.sender == owner, "NOT_OWNER");
-      // If the totalSupply is at uint256 max it means that it's either not initialised yet or supply already has reached max.
-      require(!isInitialized, "NOT_INITIALISED"); 
       // New max supply has to be higher than current supply.
       require(totalSupply < supply, "SUPPLY_ALREADY_REACHED");
       maxSupply = supply;
@@ -150,20 +147,6 @@ contract AccessToken is ERC721, Auth {
       price = newPrice;
 
       emit PriceUpdated(newPrice);
-    }
-
-    /// @notice Initializes the contract.
-    /// @dev All critical parameters must already be set before calling.
-    function initialize() external {
-      require(msg.sender == owner, "NOT_OWNER");
-      require(!isInitialized, "ALREADY_INITIALISED");
-
-      // Mark the Vault as initialized.
-      isInitialized = true;
-
-      totalSupply = 0;
-
-      emit Initialized();
     }
 
     /// @notice Checks if a token has expired or not.

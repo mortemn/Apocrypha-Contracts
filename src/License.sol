@@ -2,7 +2,7 @@
 pragma solidity 0.8.11;
 
 import {ERC721} from "solmate/tokens/ERC721.sol";
-import {Auth} from "solmate/auth/Auth.sol";
+import {Auth, Authority} from "solmate/auth/Auth.sol";
 
 
 contract License is ERC721, Auth {
@@ -23,9 +23,6 @@ contract License is ERC721, Auth {
     /// @notice Token id of the token which was last sold.
     uint256 public lastSold;
 
-    /// @notice Whether the Vault has been initialized yet.
-    bool public isInitialized;
-
     /// @notice Emitted after a new price is set.
     /// @param newPrice New price of the token.
     event PriceUpdated(uint256 newPrice);
@@ -40,27 +37,30 @@ contract License is ERC721, Auth {
     /// @param buyer address of the buyer of the token.
     event TokenSold(uint256 id, address buyer);
 
-    /// @notice Emitted after the contract is initialized. 
-    event Initialized();
-
     /// @notice Gets expiry date of token.
     mapping(uint256 => uint256) public getExpiryDate;
 
     constructor(
         string memory _name,
         string memory _symbol,
-        string memory _baseURI
+        string memory _baseURI,
+        uint256 _expiryTime,
+        uint256 _maxSupply,
+        uint256 _price,
+        Authority _authority
     ) ERC721(
       // e.g. GEB Access
       string(abi.encodePacked(_name, " License")),
       // at stands for access token
       string(abi.encodePacked("l", _symbol))
     )
-    Auth(Auth(msg.sender).owner(), Auth(msg.sender).authority()) { // the Auth(msg.sender) assumes msg.sender is a contract, and is communicating with it through the Auth interface
+    Auth(Auth(msg.sender).owner(), _authority) { // the Auth(msg.sender) assumes msg.sender is a contract, and is communicating with it through the Auth interface
       baseURI = _baseURI;
-      /// Sets supply to max and disable minting until initialized.
-      totalSupply = type(uint256).max;
       lastSold = 1;
+      totalSupply = 0;
+      expiryTime = _expiryTime;
+      maxSupply = _maxSupply;
+      price = _price;
     } 
 
 
@@ -120,19 +120,6 @@ contract License is ERC721, Auth {
       return false;
     }
 
-    /// @notice Initializes the contract.
-    /// @dev All critical parameters must already be set before calling.
-    function initialize() external requiresAuth {
-      require(!isInitialized, "ALREADY_INITIALISED");
-
-      // Mark the Vault as initialized.
-      isInitialized = true;
-
-      totalSupply = 0;
-
-      emit Initialized();
-    }
-
     /// @notice Sets a new token expiry time.
     /// @param time New expiry time. 
     function setExpiryTime(uint256 time) external requiresAuth {
@@ -144,8 +131,6 @@ contract License is ERC721, Auth {
     /// @notice Sets a new max supply.
     /// @param supply New max supply.
     function setMaxSupply(uint256 supply) external requiresAuth {
-      // If the totalSupply is at uint256 max it means that it's either not initialised yet or supply already has reached max.
-      require(!isInitialized, "NOT_INITIALISED"); 
       // New max supply has to be higher than current supply.
       require(totalSupply < supply, "SUPPLY_ALREADY_REACHED");
       maxSupply = supply;
@@ -153,7 +138,7 @@ contract License is ERC721, Auth {
       emit MaxSupplyUpdated(supply);
     }
     
-    function getMaxSupply() public view returns (uint256 maxSupply) {
+    function getMaxSupply() public view returns (uint256 supply) {
       return maxSupply;
     }
 
