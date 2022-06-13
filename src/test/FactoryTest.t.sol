@@ -13,7 +13,7 @@ import "./mocks/MockNFT.sol";
 
 import {Auth} from "solmate/auth/Auth.sol";
 import {AccessToken} from "../AccessToken.sol";
-import {LicenseAuthority} from "../AuthorityModule.sol";
+import {AuthorityModule} from "../AuthorityModule.sol";
 import {License} from "../License.sol";
 import {MockERC20} from "solmate/test/utils/mocks/MockERC20.sol";
 import {Factory} from "../Factory.sol";
@@ -28,7 +28,7 @@ interface CheatCodes {
 
 contract FactoryTest is Test {
     AccessToken accessToken;
-    LicenseAuthority licenseAuthority;
+    AuthorityModule authorityModule;
     License license;
     MockERC20 token;
     Factory factory;
@@ -45,47 +45,15 @@ contract FactoryTest is Test {
       // hoax(alice);
       /// @notice You've got to deploy the three contracts all at once.
       factory = new Factory(address(alice), Authority(alice));
-      (license, licenseAuthority, accessToken) = factory.deployBundle("GEB", "GEB", "www.google.com");
+      (license, authorityModule) = factory.deployLicenseBundle("GEB", "GEB", "www.google.com", 10 days, 100, 1 ether, 69);
       console.log("Set up is successful!");
-  
     }
 
     function testOwners() public {
-      // This test is to show that the owner of the License is whoever owning the factory that deployed the License 
-      // To see this, we will set the _owner variable of the new factory to be alice 
-      // First deployment: from "this" address
-      // The owner of the license contract is the 
-      assertEq(license.owner(), factory.owner());
-      console.log("license.owner():", license.owner());
-      // And the owner of the AccessToken is also the owner of the factory contract
-      assertEq(accessToken.owner(), accessToken.owner());
-      console.log("accessToken.owner():", accessToken.owner());
-      // And the owner of the factory is alice 
-      assertEq(factory.owner(), alice);
-      assertEq(license.owner(), alice);
-      assertEq(accessToken.owner(), alice);
-      console.log("factory.owner():", factory.owner());
-      console.log("Alice address:", alice);
-      
     }
 
 
     function testLicenseAuthorities() public {
-      hoax(alice);
-      
-      console.log("alice can call the license contract:", license.hasValidLicense(alice));
-      
-      // console.log("alice has license:", license.hasValidLicense(alice));
-      // assertTrue(LicenseAuthority(address(license)).canCall(alice, address(license), 0xa0712d68));
-      // license.setMaxSupply(100);
-      assertEq(license.getMaxSupply(),100);
-      console.log("license.getMaxSupply() is:", license.getMaxSupply());
-      // license.initialize();
-      // license.mint(1);
-
-      // Functions of the AccessToken should be only by those with the LicenseToken
-      assertTrue(Authority(address(accessToken)).canCall(alice, address(accessToken), ""));
-    
     }
 
 
@@ -96,7 +64,7 @@ contract FactoryTest is Test {
     // +------------------+--------------------------------------------------------------------------+----------------------------------------------------------------------------------------+
     // | Factory          | ALICE (artist)                                                           | Anyone                                                                                 |
     // | License          | Auth(msg.sender).owner()= owner of the factory contract, therefore Alice | those with validLicenses of that license (this has not been verified in the tests yet) |
-    // | LicenseAuthority | not owned                                                                | Anyone                                                                                 |
+    // | AuthorityModule | not owned                                                                | Anyone                                                                                 |
     // | AccessToken      | Auth(msg.sender).owner()= owner of the factory contract, therefore Alice | those with validLicenses of that license                                               |
     // +------------------+--------------------------------------------------------------------------+----------------------------------------------------------------------------------------+
 
@@ -107,7 +75,7 @@ contract FactoryTest is Test {
     //   +------------------+--------------------------------------+----------------------+
     //   | Factory          | Us                                   | Anyone               |
     //   | License          | Owner of MasterCopy (Artist - Alice) | Owner of MasterCopy  |
-    //   | LicenseAuthority | Us / Not owned                       | Anyone               |
+    //   | AuthorityModule | Us / Not owned                       | Anyone               |
     //   | AccessToken      | Owner of MasterCopy (Artist - Alice) | validLicense holders |
     //   | MasterCopy       | Artist                               | Artist               |
     //   +------------------+--------------------------------------+----------------------+
@@ -116,9 +84,9 @@ contract FactoryTest is Test {
 
 // Two observations here: 
 
-// (1) the LicenseAuthority seems to be controlling the wrong contract
-// The license contract requiresAuth modifier calls the canCall function of the LicenseAuthority to check if someone could call functions of the license contract
-// the LicenseAuthority then calls the license contract to see if the user in question has a validLicense 
+// (1) the AuthorityModule seems to be controlling the wrong contract
+// The license contract requiresAuth modifier calls the canCall function of the AuthorityModule to check if someone could call functions of the license contract
+// the AuthorityModule then calls the license contract to see if the user in question has a validLicense 
 // This appears wrong to me. validLicense holders should have rights to call the functions of the AccessToken (to mint AccessTokens), not to call the functions of the license itself
 // That right is reserved for the MasterCopy holder. 
 
@@ -131,10 +99,4 @@ contract FactoryTest is Test {
 // I suppose this can be done by calling the setAuthority() function on the license contract, but I haven't tried that out yet. 
 
 // Final remark, aside from (1), (correct me if my interpretation is wrong) - the complicated authorities can be set straight not by rewriting the contracts but by calling the apppropriate setAuthority() functions. 
-
-
-
-  
-
-          
 }

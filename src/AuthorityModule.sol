@@ -4,7 +4,7 @@ pragma solidity 0.8.11;
 import {Authority} from "solmate/auth/Auth.sol";
 import {License} from "./License.sol";
 
-contract LicenseAuthority is Authority {
+contract AuthorityModule is Authority {
   License license;
 
   constructor(License _license) {
@@ -17,7 +17,6 @@ contract LicenseAuthority is Authority {
     bytes4 functionSig
   ) external view returns (bool) {
     License userLicense = license;
-    // TODO: has to be mint function.
-    return userLicense.hasValidLicense(user) || functionSig == 0xa0712d68;
+    return userLicense.hasValidLicense(user) || functionSig == bytes4(abi.encodeWithSignature("mint(uint256)"));
   }
 }
