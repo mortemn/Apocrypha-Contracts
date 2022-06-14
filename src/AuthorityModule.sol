@@ -29,6 +29,8 @@ contract AuthorityModule is Authority {
     bytes4 functionSig
   ) external view returns (bool) {
     License userLicense = license;
+
     return (userLicense.hasValidLicense(user) || functionSig == bytes4(abi.encodeWithSignature("mint(uint256)"))) && target == accessToken;
+
   }
 }
