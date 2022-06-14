@@ -13,10 +13,14 @@ import {Auth} from "solmate/auth/Auth.sol";
 import {AccessToken} from "../AccessToken.sol";
 import {AuthorityModule} from "../AuthorityModule.sol";
 import {License} from "../License.sol";
-import {MockERC20} from "solmate/test/utils/mocks/MockERC20.sol";
 import {Factory} from "../Factory.sol";
 import {Authority} from "solmate/auth/Auth.sol";
 
+// interface CheatCodes {
+//     function deal(address who, uint256 newBalance) external;
+//     function addr(uint256 privateKey) external returns (address);
+//     function warp(uint256) external;    // Set block.timestamp
+// }
 
 contract FactoryTest is DSTestPlus {
     AccessToken accessToken;
@@ -35,4 +39,5 @@ contract FactoryTest is DSTestPlus {
 
     function testLicenseAuthorities() public {
     }
+
 }
