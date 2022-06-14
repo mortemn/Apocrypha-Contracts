@@ -11,7 +11,7 @@
 // import "./mocks/MockNFT.sol";
 
 
-<<<<<<< HEAD
+
 import {Auth} from "solmate/auth/Auth.sol";
 import {AccessToken} from "../AccessToken.sol";
 import {AuthorityModule} from "../AuthorityModule.sol";
@@ -19,16 +19,7 @@ import {License} from "../License.sol";
 import {MockERC20} from "solmate/test/utils/mocks/MockERC20.sol";
 import {Factory} from "../Factory.sol";
 import {Authority} from "solmate/auth/Auth.sol";
-=======
-// import {Auth} from "solmate/auth/Auth.sol";
-// import {AccessToken} from "../AccessToken.sol";
-// import {LicenseAuthority} from "../AuthorityModule.sol";
-// import {License} from "../License.sol";
-// import {MockERC20} from "solmate/test/utils/mocks/MockERC20.sol";
-// import {Factory} from "../Factory.sol";
-// import {Authority} from "solmate/auth/Auth.sol";
-// import {MasterCopyAuthority, MockAuthority} from "../MasterCopyAuthority.sol";
->>>>>>> 6447f998b40cde06fac02faaae3da1b9fc8a1820
+
 
 
 // interface CheatCodes {
@@ -37,24 +28,13 @@ import {Authority} from "solmate/auth/Auth.sol";
 //     function warp(uint256) external;    // Set block.timestamp
 // }
 
-<<<<<<< HEAD
+
 contract FactoryTest is Test {
     AccessToken accessToken;
     AuthorityModule authorityModule;
     License license;
     MockERC20 token;
     Factory factory;
-=======
-// contract OutOfOrderAuthority is Authority {
-//     function canCall(
-//         address,
-//         address,
-//         bytes4
-//     ) public pure override returns (bool) {
-//         revert("OUT_OF_ORDER");
-//     }
-// }
->>>>>>> 6447f998b40cde06fac02faaae3da1b9fc8a1820
 
 
 // contract FactoryTest is Test {
@@ -72,9 +52,9 @@ contract FactoryTest is Test {
 //     address alice = cheats.addr(1);
 //     address bob = cheats.addr(2);
 
-//     function setUp() public {
+    function setUp() public {
       
-<<<<<<< HEAD
+
       // license = new License("GEB", "GEB", "www.google.com"); 
       // hoax(alice);
       /// @notice You've got to deploy the three contracts all at once.
@@ -89,51 +69,6 @@ contract FactoryTest is Test {
 
     function testLicenseAuthorities() public {
     }
-=======
-//       // license = new License("GEB", "GEB", "www.google.com"); 
-//       // hoax(alice);
-//       /// @notice You've got to deploy the three contracts all at once.
-//       factory = new Factory(address(this), Authority(address(0)));
-//       // factory = new Factory(alice, Authority(alice));
-//       (license, licenseAuthority, accessToken) = factory.deployBundle("GEB", "GEB", "www.google.com");
-//       // console.log("Set up is successful!");
-  
-//     }
-
-    
-//     function testOwners() public {
-//       // This test is to show that the owner of the License is whoever owning the factory that deployed the License 
-//       // To see this, we will set the _owner variable of the new factory to be alice 
-//       // First deployment: from "this" address
-//       // The owner of the license contract is the 
-      
-//       console.log("The address of this is", address(this));
-//       console.log("The address of Alice is", address(alice));
-//       console.log("The address of the factory is", address(factory));
-//       console.log("The owner of the license is:", license.owner());
-//       console.log("The owner of the factory is:", factory.owner());
-//       console.log("The owner of the AccessToken is:", accessToken.owner());
-      
-      
-//       assertEq(license.owner(), factory.owner());
-//       assertEq(license.owner(), accessToken.owner());
-//       assertEq(accessToken.owner(), factory.owner());
-//       // assertEq(accessToken.owner(), alice);
-//       assertEq(accessToken.owner(), address(this));
-
-//     }
-
-//     // function testProprietarySetLicenseOwnerAndAuthorities() public {
-      
-      
-//     //   license.setOwner(bob);
-//     //   license.setAuthority(new MockAuthority(alice));
-//     //   // assertEq(license.owner(), bob);
-//     //   // assertEq(address(license.authority()), bob);
-//     // }
-
-    
-
 //     // function testPropABC() public {
 //     //     license.setAuthority(new MasterCopyAuthority(address(0xBEEF)));
 //     //     license.setOwner(address(0));
@@ -468,12 +403,12 @@ contract FactoryTest is Test {
 //       // assertTrue(Authority(address(accessToken)).canCall(alice, address(accessToken), ""));
     
 //     // }
->>>>>>> 6447f998b40cde06fac02faaae3da1b9fc8a1820
+
 
 
 //     // My hypothesis is that the owner and callables of the four contracts are construed as the following (RN) right now: 
 
-<<<<<<< HEAD
+
     // +------------------+--------------------------------------------------------------------------+----------------------------------------------------------------------------------------+
     // |     Contract     |                                  Owner                                   |                                      Callable by?                                      |
     // +------------------+--------------------------------------------------------------------------+----------------------------------------------------------------------------------------+
@@ -482,20 +417,10 @@ contract FactoryTest is Test {
     // | AuthorityModule | not owned                                                                | Anyone                                                                                 |
     // | AccessToken      | Auth(msg.sender).owner()= owner of the factory contract, therefore Alice | those with validLicenses of that license                                               |
     // +------------------+--------------------------------------------------------------------------+----------------------------------------------------------------------------------------+
-=======
-//     // +------------------+--------------------------------------------------------------------------+----------------------------------------------------------------------------------------+
-//     // |     Contract     |                                  Owner                                   |                                      Callable by?                                      |
-//     // +------------------+--------------------------------------------------------------------------+----------------------------------------------------------------------------------------+
-//     // | Factory          | ALICE (artist)                                                           | Anyone                                                                                 |
-//     // | License          | Auth(msg.sender).owner()= owner of the factory contract, therefore Alice | Unclear                                                                                |
-//     // | LicenseAuthority | not owned                                                                | Anyone                                                                                 |
-//     // | AccessToken      | Auth(msg.sender).owner()= owner of the factory contract, therefore Alice | those with validLicenses of that license                                               |
-//     // +------------------+--------------------------------------------------------------------------+----------------------------------------------------------------------------------------+
->>>>>>> 6447f998b40cde06fac02faaae3da1b9fc8a1820
 
 //     // In practice, we would like the structure to be (I) - ideal:
 
-<<<<<<< HEAD
+
     //   +------------------+--------------------------------------+----------------------+
     //   |     Contract     |                Owner                 |     Callable by?     |
     //   +------------------+--------------------------------------+----------------------+
@@ -505,35 +430,24 @@ contract FactoryTest is Test {
     //   | AccessToken      | Owner of MasterCopy (Artist - Alice) | validLicense holders |
     //   | MasterCopy       | Artist                               | Artist               |
     //   +------------------+--------------------------------------+----------------------+
-=======
-//     //   +------------------+--------------------------------------+----------------------+
-//     //   |     Contract     |                Owner                 |     Callable by?     |
-//     //   +------------------+--------------------------------------+----------------------+
-//     //   | Factory          | Us                                   | Anyone               |
-//     //   | License          | Owner of MasterCopy (Artist - Alice) | Owner of MasterCopy  |
-//     //   | LicenseAuthority | Us / Not owned                       | Anyone               |
-//     //   | AccessToken      | Owner of MasterCopy (Artist - Alice) | validLicense holders |
-//     //   | MasterCopy       | Artist                               | Artist               |
-//     //   +------------------+--------------------------------------+----------------------+
->>>>>>> 6447f998b40cde06fac02faaae3da1b9fc8a1820
+
 
 // // My initial plan was to verify that these contracts are indeed behaving like (RN), and then I shall modify them to become like (I)
 
 // // Two observations here: 
 
-<<<<<<< HEAD
 // (1) the AuthorityModule seems to be controlling the wrong contract
 // The license contract requiresAuth modifier calls the canCall function of the AuthorityModule to check if someone could call functions of the license contract
 // the AuthorityModule then calls the license contract to see if the user in question has a validLicense 
 // This appears wrong to me. validLicense holders should have rights to call the functions of the AccessToken (to mint AccessTokens), not to call the functions of the license itself
 // That right is reserved for the MasterCopy holder. 
-=======
+
 // // (1) the LicenseAuthority seems to be controlling the wrong contract
 // // The license contract requiresAuth modifier calls the canCall function of the LicenseAuthority to check if someone could call functions of the license contract
 // // the LicenseAuthority then calls the license contract to see if the user in question has a validLicense 
 // // This appears wrong to me. validLicense holders should have rights to call the functions of the AccessToken (to mint AccessTokens), not to call the functions of the license itself
 // // That right is reserved for the MasterCopy holder. 
->>>>>>> 6447f998b40cde06fac02faaae3da1b9fc8a1820
+
 
 // // (2) To test my hypothesis as to whether the contracts are really behaving like (RN), we need to check who's the contracts callable by. 
 // // As per the contract set up, it is not possible to call the contracts 
@@ -543,16 +457,6 @@ contract FactoryTest is Test {
 
 // // I suppose this can be done by calling the setAuthority() function on the license contract, but I haven't tried that out yet. 
 
-<<<<<<< HEAD
+
 // Final remark, aside from (1), (correct me if my interpretation is wrong) - the complicated authorities can be set straight not by rewriting the contracts but by calling the apppropriate setAuthority() functions. 
 }
-=======
-// // Final remark, aside from (1), (correct me if my interpretation is wrong) - the complicated authorities can be set straight not by rewriting the contracts but by calling the apppropriate setAuthority() functions. 
-
-
-
-  
-
-          
-// }
->>>>>>> 6447f998b40cde06fac02faaae3da1b9fc8a1820
