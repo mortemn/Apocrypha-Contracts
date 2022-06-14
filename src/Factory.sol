@@ -27,6 +27,8 @@ contract Factory is Auth {
     /// @param _authority The Authority of the factory.
     constructor(address _owner, Authority _authority) Auth(_owner, _authority) {}
 
+    AuthorityModule authorityModule;
+
     /*///////////////////////////////////////////////////////////////
                           VAULT DEPLOYMENT LOGIC
     //////////////////////////////////////////////////////////////*/
@@ -45,7 +47,7 @@ contract Factory is Auth {
     /// @param salt Salt for deploying license.
     /// @return The address of a Vault which accepts the provided underlying token.
     /// @dev The license returned may not be deployed yet. Use isLicenseDeployed to check.
-    function getLicenseFromSalt(uint256 salt) public returns (License) {
+    function getLicenseFromSalt(uint256 salt) public view returns (License) {
         return
             License(
                 payable(
@@ -72,18 +74,18 @@ contract Factory is Auth {
             );
     }
 
+    function isLicenseDeployed(License license) external view returns (bool) {
+      return address(license).code.length > 0;
+    }
 
-    // / @notice Deploys a new Vault which supports a specific underlying token.
-    // / @dev This will revert if a Vault that accepts the same underlying token has already been deployed.
-    // / @param underlying The ERC20 token that the Vault should accept.
-    // / @return vault The newly deployed Vault contract which accepts the provided underlying token.
-    function deployLicenseBundle (string memory name, string memory symbol, string memory baseURI, uint256 expiryTime, uint256 maxSupply, uint256 price, uint256 salt) external returns (License license, AuthorityModule authorityModule) {
+
+    function deployLicenseBundle (string memory name, string memory symbol, string memory baseURI, uint256 expiryTime, uint256 maxSupply, uint256 price, uint256 salt) external returns (License license, AuthorityModule) {
 
         // Checks what the address of license will be.
         License predictedLicense = getLicenseFromSalt(salt);
 
         // Deploy authority.
-        authorityModule = new AuthorityModule(predictedLicense);
+        authorityModule = new AuthorityModule(msg.sender, predictedLicense);
 
         license = new License{
           salt: bytes32(salt)
@@ -94,12 +96,12 @@ contract Factory is Auth {
         return (license, authorityModule);
     }
 
-    // / @notice Returns if a Vault at an address has already been deployed.
-    // / @param vault The address of a Vault which may not have been deployed yet.
-    // / @return A boolean indicating whether the Vault has been deployed already.
-    // / @dev This function is useful to check the return values of getVaultFromUnderlying,
-    /// as it does not check that the Vault addresses it computes have been deployed yet.
-    function isBundleDeployed(License license, AuthorityModule authorityModule, AccessToken accessToken) external view returns (bool) {
-        return address(license).code.length > 0 && address(authorityModule).code.length > 0 && address(accessToken).code.length > 0;
+    function deployAccessControl (string memory name, string memory symbol, string memory baseURI, uint256 expiryTime, uint256 maxSupply, uint256 price) external returns (AccessToken accessToken) {
+      // Deploys new access token contracts.
+      accessToken = new AccessToken(name, symbol, baseURI, expiryTime, maxSupply, price, authorityModule);
+    }
+
+    function isAccessTokenDeployed(AccessToken accessToken) external view returns (bool) {
+      return address(accessToken).code.length > 0;
     }
 }
