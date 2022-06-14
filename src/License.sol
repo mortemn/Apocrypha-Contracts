@@ -2,10 +2,9 @@
 pragma solidity 0.8.11;
 
 import {ERC721} from "solmate/tokens/ERC721.sol";
-import {Auth, Authority} from "solmate/auth/Auth.sol";
+import {Owned} from "solmate/auth/Owned.sol";
 
-
-contract License is ERC721, Auth {
+contract License is ERC721, Owned {
 
     /*//////////////////////////////////////////////////////////////
                               CONFIGURATION
@@ -46,15 +45,13 @@ contract License is ERC721, Auth {
         string memory _baseURI,
         uint256 _expiryTime,
         uint256 _maxSupply,
-        uint256 _price,
-        Authority _authority
+        uint256 _price
     ) ERC721(
       // e.g. GEB Access
       string(abi.encodePacked(_name, " License")),
       // at stands for access token
       string(abi.encodePacked("l", _symbol))
-    )
-    Auth(Auth(msg.sender).owner(), _authority) { // the Auth(msg.sender) assumes msg.sender is a contract, and is communicating with it through the Auth interface
+    ) Owned(msg.sender) { // the Auth(msg.sender) assumes msg.sender is a contract, and is communicating with it through the Auth interface
       baseURI = _baseURI;
       lastSold = 1;
       totalSupply = 0;
@@ -66,7 +63,7 @@ contract License is ERC721, Auth {
 
     /// @notice Mints a specified amount of tokens if msg sender is a license holder. 
     /// @param amount Amount of tokens to be minted.
-    function mint(uint256 amount) external requiresAuth {
+    function mint(uint256 amount) external onlyOwner {
       require(totalSupply + amount <= maxSupply, "MAX_SUPPLY_REACHED");
 
       // Won't overflow (New total supply is less than max supply)
@@ -122,7 +119,7 @@ contract License is ERC721, Auth {
 
     /// @notice Sets a new token expiry time.
     /// @param time New expiry time. 
-    function setExpiryTime(uint256 time) external requiresAuth {
+    function setExpiryTime(uint256 time) external {
       expiryTime = time;
 
       emit ExpiryTimeUpdated(time);
@@ -130,7 +127,7 @@ contract License is ERC721, Auth {
 
     /// @notice Sets a new max supply.
     /// @param supply New max supply.
-    function setMaxSupply(uint256 supply) external requiresAuth {
+    function setMaxSupply(uint256 supply) external {
       // New max supply has to be higher than current supply.
       require(totalSupply < supply, "SUPPLY_ALREADY_REACHED");
       maxSupply = supply;
@@ -144,7 +141,7 @@ contract License is ERC721, Auth {
 
     /// @notice Sets a new token price.
     /// @param newPrice New price.
-    function setPrice(uint256 newPrice) external requiresAuth {
+    function setPrice(uint256 newPrice) external {
       price = newPrice;
 
       emit PriceUpdated(newPrice);

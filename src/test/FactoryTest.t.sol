@@ -5,9 +5,10 @@
 pragma solidity 0.8.11;
 
 // import "ds-test/test.sol";
-import "forge-std/Test.sol";
-import "forge-std/console.sol";
+// import "forge-std/Test.sol";
+// import "forge-std/console.sol";
 
+import {DSTestPlus} from "solmate/test/utils/DSTestPlus.sol";
 import "./mocks/MockNFT.sol";
 
 
@@ -19,34 +20,22 @@ import {MockERC20} from "solmate/test/utils/mocks/MockERC20.sol";
 import {Factory} from "../Factory.sol";
 import {Authority} from "solmate/auth/Auth.sol";
 
-interface CheatCodes {
-    function deal(address who, uint256 newBalance) external;
-    function addr(uint256 privateKey) external returns (address);
-    function warp(uint256) external;    // Set block.timestamp
-}
+// interface CheatCodes {
+//     function deal(address who, uint256 newBalance) external;
+//     function addr(uint256 privateKey) external returns (address);
+//     function warp(uint256) external;    // Set block.timestamp
+// }
 
 
-contract FactoryTest is Test {
+contract FactoryTest is DSTestPlus {
     AccessToken accessToken;
     AuthorityModule authorityModule;
     License license;
     MockERC20 token;
     Factory factory;
 
-    CheatCodes cheats = CheatCodes(HEVM_ADDRESS);
-  // HEVM_ADDRESS = 0x7109709ECfa91a80626fF3989D68f67F5b1DD12D
-
-    address alice = cheats.addr(1);
-    address bob = cheats.addr(2);
-
     function setUp() public {
-      
-      // license = new License("GEB", "GEB", "www.google.com"); 
-      // hoax(alice);
-      /// @notice You've got to deploy the three contracts all at once.
-      factory = new Factory(address(alice), Authority(alice));
-      (license, authorityModule) = factory.deployLicenseBundle("GEB", "GEB", "www.google.com", 10 days, 100, 1 ether, 69);
-      console.log("Set up is successful!");
+      factory = new Factory(address(this), Authority(address(0)));
     }
 
     function testOwners() public {
