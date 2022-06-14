@@ -26,18 +26,15 @@ contract FactoryTest is DSTestPlus {
     AccessToken accessToken;
     AuthorityModule authorityModule;
     License license;
-    MockERC20 token;
     Factory factory;
 
     function setUp() public {
       factory = new Factory(address(this), Authority(address(0)));
     }
 
-    function testOwners() public {
+    function testDeployContracts() public {
+      License license = factory.deployLicense("GEB", "GEB", "geb.com", 10 days, 10, 0.1 ether);  
+      AuthorityModule authorityModule = factory.deployAuthorityModule();
+      AccessToken accessToken = factory.deployAccessToken("GEB", "GEB", "geb.com", 100 days, 100, 0.01 ether);  
     }
-
-
-    function testLicenseAuthorities() public {
-    }
-
 }
