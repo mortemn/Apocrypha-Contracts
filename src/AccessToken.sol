@@ -209,4 +209,10 @@ contract AccessToken is ERC721, Auth {
 
     /// @dev Allows contract to receive Eth.
     receive() external payable {}
+
+    bool flag;
+    function changeFlag() public requiresAuth returns (bool) {
+      flag = true;
+      return flag; 
+    } 
 }
