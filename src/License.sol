@@ -164,14 +164,12 @@ contract License is ERC721, Owned {
       return false; 
     }
     
-    // / TODO: return our API along with specific information about token in it e.g. expiry time.
     function tokenURI(uint256 tokenId)
         public
         view
         override
         returns (string memory)
     {
-        // require(ownerOf[tokenId] != address(0), "TOKEN_DOES_NOT_EXIST");
         require(ownerOf(tokenId) != address(0), "TOKEN_DOES_NOT_EXIST");
 
         return

@@ -6,8 +6,6 @@ pragma solidity 0.8.11;
 // import "forge-std/console.sol";
 
 import {DSTestPlus} from "solmate/test/utils/DSTestPlus.sol";
-import "./mocks/MockNFT.sol";
-
 
 import {Auth} from "solmate/auth/Auth.sol";
 import {AccessToken} from "../AccessToken.sol";
