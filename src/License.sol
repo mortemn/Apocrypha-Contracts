@@ -2,10 +2,15 @@
 pragma solidity 0.8.11;
 
 import {ERC721} from "solmate/tokens/ERC721.sol";
+<<<<<<< HEAD
 import {Auth, Authority} from "solmate/auth/Auth.sol";
 import {Owned} from "solmate/auth/Owned.sol";
 
 
+=======
+import {Owned} from "solmate/auth/Owned.sol";
+
+>>>>>>> df7dba1aa062c4828536feb9db16898bf2192b60
 contract License is ERC721, Owned {
 
     /*//////////////////////////////////////////////////////////////
@@ -46,15 +51,23 @@ contract License is ERC721, Owned {
         string memory _baseURI,
         uint256 _expiryTime,
         uint256 _maxSupply,
+<<<<<<< HEAD
         uint256 _price,
         address _author
+=======
+        uint256 _price
+>>>>>>> df7dba1aa062c4828536feb9db16898bf2192b60
     ) ERC721(
       // e.g. GEB Access
       string(abi.encodePacked(_name, " License")),
       // at stands for access token
       string(abi.encodePacked("l", _symbol))
+<<<<<<< HEAD
     )
     Owned(_author) {
+=======
+    ) Owned(msg.sender) { // the Auth(msg.sender) assumes msg.sender is a contract, and is communicating with it through the Auth interface
+>>>>>>> df7dba1aa062c4828536feb9db16898bf2192b60
       baseURI = _baseURI;
       lastSold = 1;
       totalSupply = 0;
@@ -125,7 +138,11 @@ contract License is ERC721, Owned {
 
     /// @notice Sets a new token expiry time.
     /// @param time New expiry time. 
+<<<<<<< HEAD
     function setExpiryTime(uint256 time) external onlyOwner {
+=======
+    function setExpiryTime(uint256 time) external {
+>>>>>>> df7dba1aa062c4828536feb9db16898bf2192b60
       expiryTime = time;
 
       emit ExpiryTimeUpdated(time);
@@ -133,7 +150,11 @@ contract License is ERC721, Owned {
 
     /// @notice Sets a new max supply.
     /// @param supply New max supply.
+<<<<<<< HEAD
     function setMaxSupply(uint256 supply) external onlyOwner {
+=======
+    function setMaxSupply(uint256 supply) external {
+>>>>>>> df7dba1aa062c4828536feb9db16898bf2192b60
       // New max supply has to be higher than current supply.
       require(totalSupply < supply, "SUPPLY_ALREADY_REACHED");
       maxSupply = supply;
@@ -147,7 +168,11 @@ contract License is ERC721, Owned {
 
     /// @notice Sets a new token price.
     /// @param newPrice New price.
+<<<<<<< HEAD
     function setPrice(uint256 newPrice) external onlyOwner {
+=======
+    function setPrice(uint256 newPrice) external {
+>>>>>>> df7dba1aa062c4828536feb9db16898bf2192b60
       price = newPrice;
 
       emit PriceUpdated(newPrice);
@@ -180,14 +205,12 @@ contract License is ERC721, Owned {
       return expiryDate;
     }
     
-    // / TODO: return our API along with specific information about token in it e.g. expiry time.
     function tokenURI(uint256 tokenId)
         public
         view
         override
         returns (string memory)
     {
-        // require(ownerOf[tokenId] != address(0), "TOKEN_DOES_NOT_EXIST");
         require(ownerOf(tokenId) != address(0), "TOKEN_DOES_NOT_EXIST");
 
         return

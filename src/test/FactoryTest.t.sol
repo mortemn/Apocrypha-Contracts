@@ -1,16 +1,11 @@
-// // SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity 0.8.11;
 
-// // The BundleTest is old. 
-// // This is the test that I am using to build
-// pragma solidity 0.8.11;
-
-// // import "ds-test/test.sol";
+// import "ds-test/test.sol";
 // import "forge-std/Test.sol";
 // import "forge-std/console.sol";
 
-// import "./mocks/MockNFT.sol";
-
-
+import {DSTestPlus} from "solmate/test/utils/DSTestPlus.sol";
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
@@ -22,10 +17,10 @@ import {Auth} from "solmate/auth/Auth.sol";
 import {AccessToken} from "../AccessToken.sol";
 import {AuthorityModule} from "../AuthorityModule.sol";
 import {License} from "../License.sol";
-import {MockERC20} from "solmate/test/utils/mocks/MockERC20.sol";
 import {Factory} from "../Factory.sol";
 import {Authority} from "solmate/auth/Auth.sol";
 
+<<<<<<< HEAD
 
 
 
@@ -34,15 +29,21 @@ interface CheatCodes {
     function addr(uint256 privateKey) external returns (address);
     function warp(uint256) external;    // Set block.timestamp
 }
+=======
+// interface CheatCodes {
+//     function deal(address who, uint256 newBalance) external;
+//     function addr(uint256 privateKey) external returns (address);
+//     function warp(uint256) external;    // Set block.timestamp
+// }
+>>>>>>> df7dba1aa062c4828536feb9db16898bf2192b60
 
-
-contract FactoryTest is Test {
+contract FactoryTest is DSTestPlus {
     AccessToken accessToken;
     AuthorityModule authorityModule;
     License license;
-    MockERC20 token;
     Factory factory;
 
+<<<<<<< HEAD
 
 
     CheatCodes cheats = CheatCodes(HEVM_ADDRESS);
@@ -436,10 +437,30 @@ contract FactoryTest is Test {
 //         license.setOwner(deadOwner);
 //         license.setAuthority(newAuthority);
 //     }
+=======
+    function setUp() public {
+      factory = new Factory(address(this), Authority(address(0)));
+    }
 
-//     function testCallFunctionWithPermissiveAuthority(address deadOwner) public {
-//         if (deadOwner == address(this)) deadOwner = address(0);
+    function testDeploy2Contracts() public {
+      license = factory.deployLicense("GEB", "GEB", "geb.com", 10 days, 10, 0.1 ether);
+      authorityModule = factory.deployAuthorityModule(license);
+    }
 
+    function testDeployContracts() public {
+      license = factory.deployLicense("GEB", "GEB", "geb.com", 10 days, 10, 0.1 ether);
+      authorityModule = factory.deployAuthorityModule(license);
+      accessToken = factory.deployAccessToken("GEB", "GEB", "geb.com", 100 days, 100, 0.01 ether, authorityModule);
+
+      assertTrue(factory.areContractsDeployed(license, authorityModule, accessToken));
+    }
+>>>>>>> df7dba1aa062c4828536feb9db16898bf2192b60
+
+    function testFalseDeployContracts() public {
+      license = factory.deployLicense("GEB", "GEB", "geb.com", 10 days, 10, 0.1 ether);  
+      authorityModule = factory.deployAuthorityModule(license);
+
+<<<<<<< HEAD
 //         license.setAuthority(new MockAuthority(true));
 //         license.setOwner(deadOwner);
 //         license.updateFlag();
@@ -637,4 +658,8 @@ contract FactoryTest is Test {
 
 
 // Final remark, aside from (1), (correct me if my interpretation is wrong) - the complicated authorities can be set straight not by rewriting the contracts but by calling the apppropriate setAuthority() functions. 
+=======
+      assertFalse(factory.areContractsDeployed(license, authorityModule, AccessToken(payable(address(0xBEEF)))));
+    }
+>>>>>>> df7dba1aa062c4828536feb9db16898bf2192b60
 }

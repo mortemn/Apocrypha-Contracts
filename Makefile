@@ -5,4 +5,4 @@ build:
 lint:
 	solhint ./src/**.sol
 test:
-	forge test -vvvv
+	forge test -vv

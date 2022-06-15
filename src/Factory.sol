@@ -28,58 +28,32 @@ contract Factory is Auth {
     /// @param _authority The Authority of the factory.
     constructor(address _owner, Authority _authority) Auth(_owner, _authority) {}
 
-    AuthorityModule authorityModule;
-
     /*///////////////////////////////////////////////////////////////
-                          VAULT DEPLOYMENT LOGIC
+                            CONTRACT DEPLOYMENT 
     //////////////////////////////////////////////////////////////*/
 
+<<<<<<< HEAD
     /// @notice Emitted when a new Bundle is deployed.
     /// @param license The newly deployed License contract.
     /// @param authorityModule The new authorityModule deployed (might not be necessary in the long run and can be deleted)
     // it might not be necessary because there's no Auth inside the AuthorityModule contract 
     // event LicenseBundleDeployed(License license, AuthorityModule authorityModule);
     event LicenseBundleDeployed(License license, AuthorityModule authorityModule);
+=======
+    event AuthorityModuleDeployed(AuthorityModule authorityModule); 
+>>>>>>> df7dba1aa062c4828536feb9db16898bf2192b60
 
-    /*///////////////////////////////////////////////////////////////
-                            LICENSE LOOKUP LOGIC
-    //////////////////////////////////////////////////////////////*/
+    event LicenseDeployed(License license);
 
-    /// @notice Computes a License's address from its accepted underlying token.
-    /// @param salt Salt for deploying license.
-    /// @return The address of a Vault which accepts the provided underlying token.
-    /// @dev The license returned may not be deployed yet. Use isLicenseDeployed to check.
-    function getLicenseFromSalt(uint256 salt) public view returns (License) {
-        return
-            License(
-                payable(
-                    keccak256(
-                        abi.encodePacked(
-                            // Prefix:
-                            bytes1(0xFF),
-                            // Creator:
-                            address(this),
-                            // Salt:
-                            salt,
-                            // Bytecode hash:
-                            keccak256(
-                                abi.encodePacked(
-                                    // Deployment bytecode:
-                                    type(License).creationCode,
-                                    // Constructor arguments:
-                                    abi.encode(salt)
-                                )
-                            )
-                        )
-                    ).fromLast20Bytes() // Convert the CREATE2 hash into an address.
-                )
-            );
+    event AccessTokenDeployed(AccessToken accessToken); 
+
+    function deployLicense (string memory name, string memory symbol, string memory baseURI, uint256 expiryTime, uint256 maxSupply, uint256 price) external returns (License license) {
+      license = new License(name, symbol, baseURI, expiryTime, maxSupply, price); 
+      emit LicenseDeployed(license);
+      return (license);
     }
 
-    function isLicenseDeployed(License license) external view returns (bool) {
-      return address(license).code.length > 0;
-    }
-
+<<<<<<< HEAD
 
     // function deployLicenseBundle (string memory name, string memory symbol, string memory baseURI, uint256 expiryTime, uint256 maxSupply, uint256 price, uint256 salt, address author) external returns (License license, AuthorityModule) {    
 
@@ -118,14 +92,21 @@ contract Factory is Auth {
         
 
         return (license, authorityModule);
+=======
+    function deployAuthorityModule (License license) external returns (AuthorityModule authorityModule) {
+      authorityModule = new AuthorityModule(msg.sender, license);
+      emit AuthorityModuleDeployed(authorityModule);
+      return (authorityModule);
+>>>>>>> df7dba1aa062c4828536feb9db16898bf2192b60
     }
 
-    function deployAccessControl (string memory name, string memory symbol, string memory baseURI, uint256 expiryTime, uint256 maxSupply, uint256 price) external returns (AccessToken accessToken) {
-      // Deploys new access token contracts.
-      accessToken = new AccessToken(name, symbol, baseURI, expiryTime, maxSupply, price, authorityModule);
+    function deployAccessToken (string memory name, string memory symbol, string memory baseURI, uint256 expiryTime, uint256 maxSupply, uint256 price, AuthorityModule authorityModule) external returns (AccessToken accessToken) {
+      accessToken = new AccessToken(name, symbol, baseURI, expiryTime, maxSupply, price, authorityModule); 
+      emit AccessTokenDeployed(accessToken);
+      return (accessToken);
     }
 
-    function isAccessTokenDeployed(AccessToken accessToken) external view returns (bool) {
-      return address(accessToken).code.length > 0;
+    function areContractsDeployed(License license, AuthorityModule authorityModule, AccessToken accessToken) external view returns (bool) {
+      return (address(license).code.length > 0) && (address(authorityModule).code.length > 0) && (address(accessToken).code.length > 0);
     }
 }
