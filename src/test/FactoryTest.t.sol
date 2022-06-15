@@ -215,17 +215,18 @@ contract FactoryTest is Test {
         console.log("bob has validLicense:", authorityModule.userHasLicense(bob));
         assertTrue(accessToken.changeFlag());
         
-        
 
     }
 
     
 
-    // function testBuy() public {
-        // hoax(bob);
-        // console.log("bob's balance is:", bob.balance);
-        // license.buy{value:1 ether}();
-    // }
+    function testBuy() public {
+        hoax(alice);
+        license.mint(3);
+        hoax(bob);
+        console.log("bob's balance is:", bob.balance);
+        license.buy{value:1 ether}();
+    }
 
 
 
