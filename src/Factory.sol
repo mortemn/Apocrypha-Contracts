@@ -37,23 +37,19 @@ contract Factory is Auth {
 
     event AccessTokenDeployed(AccessToken accessToken); 
 
-    License license;
-    AuthorityModule authorityModule;
-    AccessToken accessToken;
-
-    function deployLicense (string memory name, string memory symbol, string memory baseURI, uint256 expiryTime, uint256 maxSupply, uint256 price) external returns (License) {
+    function deployLicense (string memory name, string memory symbol, string memory baseURI, uint256 expiryTime, uint256 maxSupply, uint256 price) external returns (License license) {
       license = new License(name, symbol, baseURI, expiryTime, maxSupply, price); 
       emit LicenseDeployed(license);
       return (license);
     }
 
-    function deployAuthorityModule () external returns (AuthorityModule) {
+    function deployAuthorityModule (License license) external returns (AuthorityModule authorityModule) {
       authorityModule = new AuthorityModule(msg.sender, license);
       emit AuthorityModuleDeployed(authorityModule);
       return (authorityModule);
     }
 
-    function deployAccessToken (string memory name, string memory symbol, string memory baseURI, uint256 expiryTime, uint256 maxSupply, uint256 price) external returns (AccessToken) {
+    function deployAccessToken (string memory name, string memory symbol, string memory baseURI, uint256 expiryTime, uint256 maxSupply, uint256 price, AuthorityModule authorityModule) external returns (AccessToken accessToken) {
       accessToken = new AccessToken(name, symbol, baseURI, expiryTime, maxSupply, price, authorityModule); 
       emit AccessTokenDeployed(accessToken);
       return (accessToken);

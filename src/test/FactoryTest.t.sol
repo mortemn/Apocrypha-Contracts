@@ -32,17 +32,22 @@ contract FactoryTest is DSTestPlus {
       factory = new Factory(address(this), Authority(address(0)));
     }
 
+    function testDeploy2Contracts() public {
+      license = factory.deployLicense("GEB", "GEB", "geb.com", 10 days, 10, 0.1 ether);
+      authorityModule = factory.deployAuthorityModule(license);
+    }
+
     function testDeployContracts() public {
-      license = factory.deployLicense("GEB", "GEB", "geb.com", 10 days, 10, 0.1 ether);  
-      authorityModule = factory.deployAuthorityModule();
-      accessToken = factory.deployAccessToken("GEB", "GEB", "geb.com", 100 days, 100, 0.01 ether);  
+      license = factory.deployLicense("GEB", "GEB", "geb.com", 10 days, 10, 0.1 ether);
+      authorityModule = factory.deployAuthorityModule(license);
+      accessToken = factory.deployAccessToken("GEB", "GEB", "geb.com", 100 days, 100, 0.01 ether, authorityModule);
 
       assertTrue(factory.areContractsDeployed(license, authorityModule, accessToken));
     }
 
     function testFalseDeployContracts() public {
       license = factory.deployLicense("GEB", "GEB", "geb.com", 10 days, 10, 0.1 ether);  
-      authorityModule = factory.deployAuthorityModule();
+      authorityModule = factory.deployAuthorityModule(license);
 
       assertFalse(factory.areContractsDeployed(license, authorityModule, AccessToken(payable(address(0xBEEF)))));
     }
