@@ -58,4 +58,8 @@ contract Factory is Auth {
       emit AccessTokenDeployed(accessToken);
       return (accessToken);
     }
+
+    function areContractsDeployed(License license, AuthorityModule authorityModule, AccessToken accessToken) external view returns (bool) {
+      return (address(license).code.length > 0) && (address(authorityModule).code.length > 0) && (address(accessToken).code.length > 0);
+    }
 }

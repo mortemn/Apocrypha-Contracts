@@ -33,8 +33,17 @@ contract FactoryTest is DSTestPlus {
     }
 
     function testDeployContracts() public {
-      License license = factory.deployLicense("GEB", "GEB", "geb.com", 10 days, 10, 0.1 ether);  
-      AuthorityModule authorityModule = factory.deployAuthorityModule();
-      AccessToken accessToken = factory.deployAccessToken("GEB", "GEB", "geb.com", 100 days, 100, 0.01 ether);  
+      license = factory.deployLicense("GEB", "GEB", "geb.com", 10 days, 10, 0.1 ether);  
+      authorityModule = factory.deployAuthorityModule();
+      accessToken = factory.deployAccessToken("GEB", "GEB", "geb.com", 100 days, 100, 0.01 ether);  
+
+      assertTrue(factory.areContractsDeployed(license, authorityModule, accessToken));
+    }
+
+    function testFalseDeployContracts() public {
+      license = factory.deployLicense("GEB", "GEB", "geb.com", 10 days, 10, 0.1 ether);  
+      authorityModule = factory.deployAuthorityModule();
+
+      assertFalse(factory.areContractsDeployed(license, authorityModule, AccessToken(payable(address(0xBEEF)))));
     }
 }
