@@ -153,6 +153,10 @@ contract License is ERC721, Owned {
       emit PriceUpdated(newPrice);
     }
 
+    function getPrice() public view returns (uint256) {
+      return price;
+    }
+
     /// @notice Checks if a token has expired or not.
     /// @param id Id of token to be checked.
     function isExpired(uint256 id)

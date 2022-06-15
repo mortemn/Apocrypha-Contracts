@@ -214,20 +214,34 @@ contract FactoryTest is Test {
         console.log(address(authorityModule.getLicense()));
         console.log("bob has validLicense:", authorityModule.userHasLicense(bob));
         assertTrue(accessToken.changeFlag());
-        
-
+    
     }
 
     
 
-    function testBuy() public {
-        hoax(alice);
+    function testBuyLicense() public {
+        hoax(alice, 0);
         license.mint(3);
-        hoax(bob);
+        
+        
+        hoax(bob, 1 ether);
         console.log("bob's balance is:", bob.balance);
+        console.log("balance of this contract:", address(this).balance);
+        console.log("balance of alice:", alice.balance);
         license.buy{value:1 ether}();
+        // assertTrue(bob.balance)
+        console.log("balance of alice:", alice.balance);
+        console.log("balance of this contract:", address(this).balance);
     }
 
+
+    function testChangeLicensePrice() public {
+        
+        console.log("before price change:", license.getPrice());
+        hoax(alice);
+        license.setPrice(3.14 ether);
+        console.log("after price change:", license.getPrice());
+    }
 
 
 
