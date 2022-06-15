@@ -12,6 +12,12 @@
 
 
 
+import "forge-std/Test.sol";
+import "forge-std/console.sol";
+
+import "./mocks/MockNFT.sol";
+
+
 import {Auth} from "solmate/auth/Auth.sol";
 import {AccessToken} from "../AccessToken.sol";
 import {AuthorityModule} from "../AuthorityModule.sol";
@@ -22,11 +28,12 @@ import {Authority} from "solmate/auth/Auth.sol";
 
 
 
-// interface CheatCodes {
-//     function deal(address who, uint256 newBalance) external;
-//     function addr(uint256 privateKey) external returns (address);
-//     function warp(uint256) external;    // Set block.timestamp
-// }
+
+interface CheatCodes {
+    function deal(address who, uint256 newBalance) external;
+    function addr(uint256 privateKey) external returns (address);
+    function warp(uint256) external;    // Set block.timestamp
+}
 
 
 contract FactoryTest is Test {
@@ -37,38 +44,194 @@ contract FactoryTest is Test {
     Factory factory;
 
 
-// contract FactoryTest is Test {
-//     AccessToken accessToken;
-//     LicenseAuthority licenseAuthority;
-//     License license;
-//     MockERC20 token;
-//     Factory factory;
 
-//     MasterCopyAuthority masterCopyAuthority;
+    CheatCodes cheats = CheatCodes(HEVM_ADDRESS);
+//   HEVM_ADDRESS = 0x7109709ECfa91a80626fF3989D68f67F5b1DD12D
+    
+    address alice = address(0xAAAA); // Alice is the author
+    address bob = cheats.addr(2);
+    address carol = cheats.addr(3);
 
-//     CheatCodes cheats = CheatCodes(HEVM_ADDRESS);
-//   // HEVM_ADDRESS = 0x7109709ECfa91a80626fF3989D68f67F5b1DD12D
 
-//     address alice = cheats.addr(1);
-//     address bob = cheats.addr(2);
-
+    string public name            = "GEB";
+    string public symbol          = "GEB";
+    string public baseURI         = "www.google.com";
+    uint256 licenseExpiryTime     = 100000 days;
+    uint256 accessTokenExpiryTime = 10 days;
+    uint256 maxSupply             = 100;
+    uint256 price                 = 1 ether;
+    uint256 salt                  = 69;
+    
     function setUp() public {
       
-
-      // license = new License("GEB", "GEB", "www.google.com"); 
-      // hoax(alice);
+    
       /// @notice You've got to deploy the three contracts all at once.
-      factory = new Factory(address(alice), Authority(alice));
-      (license, authorityModule) = factory.deployLicenseBundle("GEB", "GEB", "www.google.com", 10 days, 100, 1 ether, 69);
-      console.log("Set up is successful!");
+        factory = new Factory(address(this), Authority(address(0)));
+    
+        (license, authorityModule) = factory.deployLicenseBundle(name, symbol, baseURI, licenseExpiryTime, maxSupply, price, salt, alice);
+        
+        accessToken = factory.deployAccessControl(name, symbol, baseURI, accessTokenExpiryTime, maxSupply, price);
+        
+        authorityModule.setAccessTokenAddress(address(accessToken));
+        
+
+    
+    //   +------------------+--------------------------------------+----------------------+
+    //   |     Contract     |                Owner                 |     Callable by?     |
+    //   +------------------+--------------------------------------+----------------------+
+    //   | Factory          | Us                                   | Anyone               |
+    //   | License          | MasterCopy Owner                                | Owner of MasterCopy           |
+    //   | AuthorityModule  | Us / Not owned                       | Anyone                                                             |
+    //   | AccessToken      | US                                   | validLicense holders & owner of LicenseContract (therefore MasterCopy Owner) |
+    //   | MasterCopy       | MasterCopy Owner                     | MasterCopy Owner                    |
+    //   +------------------+--------------------------------------+----------------------+
+
     }
 
     function testOwners() public {
+
+        assertEq(factory.owner(), address(this));
+        assertEq(license.owner(), alice);
+        assertEq(accessToken.owner(), address(this));
+        
+        console.log("owner of factory:", factory.owner());
+        console.log("owner of license:", license.owner());
+        console.log("owner of accessToken:", accessToken.owner());
+        console.log("address of license:", address(license));
+        console.log("address of factory:", address(factory));
+        console.log("address of alice:", alice);
+        console.log("address of this:", address(this));
+  
+    }
+
+    function testAuthorities() public {
+        assertEq(address(factory.authority()), address(0));
+        assertEq(address(accessToken.authority()), address(authorityModule));
+    }
+
+    function testAuthorCanMintLicense() public {
+        // alice is the author
+        // She ownes the license contract 
+        assertEq(license.owner(), alice);
+        // she can mint licenses 
+        startHoax(alice);
+        license.mint(1);
+        assertEq(license.ownerOf(1), alice);    
+        license.mint(1);
+        assertEq(license.ownerOf(2), alice);    
+
+    }
+
+    function testAuthorCanSetExpiryTime() public {
+        
+        startHoax(alice);                               // Calling License contract as Author Alice.
+        console.log(block.timestamp);                   // The time now is 1.
+        uint256 expiryTime = 10000;                     
+        license.setExpiryTime(expiryTime);              // Setting the Expiry Time.
+        license.mint(1);                                // Minting 3 tokens.
+        assertTrue(!license.isExpired(1));              // Not expired.
+        cheats.warp(block.timestamp+expiryTime);        // Changing the time to time after the expirytime.       
+        console.log(block.timestamp);                   // Time now is 10001.
+        assertTrue(license.isExpired(1));               // Expired.
     }
 
 
-    function testLicenseAuthorities() public {
+    function testAuthorCanSetMaxSupply() public {
+
     }
+
+    function testAuthorCanSetPrice() public {
+        
+    }
+
+    function testExpiredLicenseHoldersCannotCallAccessTokenFunctions() public {
+        
+        
+        console.log("time is right now:", block.timestamp);                   // The time now is 1.
+        uint256 expiryTime = licenseExpiryTime;                     
+        hoax(alice);
+        // license.setExpiryTime(expiryTime);                              
+        console.log("expiryDate:",license.checkExpiryDate(1));          // returns 0 because token not minted yet 
+        hoax(alice);
+        license.mint(1);
+        console.log("expiryDate:",license.checkExpiryDate(1));
+        hoax(alice);
+        license.safeTransferFrom(alice, bob, 1);
+        assertTrue(license.hasValidLicense(bob));
+        assertEq(license.checkExpiryDate(1), expiryTime + block.timestamp);
+        hoax(bob);
+        assertTrue(accessToken.changeFlag());
+        cheats.warp(block.timestamp + expiryTime);
+        hoax(bob);
+        vm.expectRevert(abi.encodePacked("UNAUTHORIZED"));
+        accessToken.changeFlag();
+        
+    }
+
+
+    function testSettingExpiryTimeAfterMint() public {
+        uint256 expiryTime = 2;   
+        startHoax(alice);
+        
+        license.mint(1);
+        console.log("expiry for token 1:", license.checkExpiryDate(1));    // 8640000001 (10000 days)
+        license.setExpiryTime(expiryTime); 
+        console.log("expiry for token 1:", license.checkExpiryDate(1));    // 8640000001 (10000 days) 
+        
+        // Once you've minted a license, you cannot change the expiry date of that license by changing the global expiry time
+
+        license.mint(1);
+        
+        console.log("expiry for token 2:", license.checkExpiryDate(2));    // 3 
+
+    }
+
+
+    function testCallingAccessTokenAsAuthor() public {
+        
+        assertEq(license.owner(), alice);
+        hoax(alice);                
+        assertTrue(accessToken.changeFlag());
+        
+    }
+
+    function testLicenseOwnersCanCallAccessToken() public {
+        
+        // alice is the author
+        // She ownes the license contract 
+        // she can mint licenses 
+        hoax(alice);
+        license.mint(2);
+        hoax(alice);
+        license.safeTransferFrom(alice, bob, 1);
+        hoax(bob);
+        console.log("bob's address:", bob);
+
+        console.log("bob has validLicense:", license.hasValidLicense(bob));
+        assertTrue(license.hasValidLicense(bob));
+
+        console.log(address(license));
+        console.log(address(authorityModule.getLicense()));
+        console.log("bob has validLicense:", authorityModule.userHasLicense(bob));
+        assertTrue(accessToken.changeFlag());
+        
+        
+
+    }
+
+    
+
+    // function testBuy() public {
+        // hoax(bob);
+        // console.log("bob's balance is:", bob.balance);
+        // license.buy{value:1 ether}();
+    // }
+
+
+
+
+    // function testLicenseAuthorities() public {
+    // }
 //     // function testPropABC() public {
 //     //     license.setAuthority(new MasterCopyAuthority(address(0xBEEF)));
 //     //     license.setOwner(address(0));
@@ -426,7 +589,7 @@ contract FactoryTest is Test {
     //   +------------------+--------------------------------------+----------------------+
     //   | Factory          | Us                                   | Anyone               |
     //   | License          | Owner of MasterCopy (Artist - Alice) | Owner of MasterCopy  |
-    //   | AuthorityModule | Us / Not owned                       | Anyone               |
+    //   | AuthorityModule  | Us / Not owned                       | Anyone               |
     //   | AccessToken      | Owner of MasterCopy (Artist - Alice) | validLicense holders |
     //   | MasterCopy       | Artist                               | Artist               |
     //   +------------------+--------------------------------------+----------------------+

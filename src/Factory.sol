@@ -7,6 +7,7 @@ import {Bytes32AddressLib} from "solmate/utils/Bytes32AddressLib.sol";
 
 import {License} from "./License.sol";
 import {AuthorityModule} from "./AuthorityModule.sol";
+import {MasterCopyAuthority} from "./MasterCopyAuthority.sol";
 import {AccessToken} from "./AccessToken.sol";
 
 
@@ -37,6 +38,7 @@ contract Factory is Auth {
     /// @param license The newly deployed License contract.
     /// @param authorityModule The new authorityModule deployed (might not be necessary in the long run and can be deleted)
     // it might not be necessary because there's no Auth inside the AuthorityModule contract 
+    // event LicenseBundleDeployed(License license, AuthorityModule authorityModule);
     event LicenseBundleDeployed(License license, AuthorityModule authorityModule);
 
     /*///////////////////////////////////////////////////////////////
@@ -79,19 +81,41 @@ contract Factory is Auth {
     }
 
 
-    function deployLicenseBundle (string memory name, string memory symbol, string memory baseURI, uint256 expiryTime, uint256 maxSupply, uint256 price, uint256 salt) external returns (License license, AuthorityModule) {
+    // function deployLicenseBundle (string memory name, string memory symbol, string memory baseURI, uint256 expiryTime, uint256 maxSupply, uint256 price, uint256 salt, address author) external returns (License license, AuthorityModule) {    
+
+    //     // Checks what the address of license will be.
+    //     License predictedLicense = getLicenseFromSalt(salt);
+
+    //     // Deploy authority.
+    //     authorityModule = new AuthorityModule(msg.sender, predictedLicense);
+
+        
+
+    //     license = new License{
+
+    //       salt: bytes32(salt)
+    //     } (name, symbol, baseURI, expiryTime, maxSupply, price, author); 
+
+    //     emit LicenseBundleDeployed(license, authorityModule);
+        
+
+    //     return (license, authorityModule);
+    // }
+
+
+    function deployLicenseBundle (string memory name, string memory symbol, string memory baseURI, uint256 expiryTime, uint256 maxSupply, uint256 price, uint256 salt, address author) external returns (License license, AuthorityModule) {    
 
         // Checks what the address of license will be.
-        License predictedLicense = getLicenseFromSalt(salt);
+        // License predictedLicense = getLicenseFromSalt(salt);
+
+        license = new License (name, symbol, baseURI, expiryTime, maxSupply, price, author); 
 
         // Deploy authority.
-        authorityModule = new AuthorityModule(msg.sender, predictedLicense);
+        authorityModule = new AuthorityModule(msg.sender, license);
 
-        license = new License{
-          salt: bytes32(salt)
-        } (name, symbol, baseURI, expiryTime, maxSupply, price, authorityModule); 
-
+    
         emit LicenseBundleDeployed(license, authorityModule);
+        
 
         return (license, authorityModule);
     }

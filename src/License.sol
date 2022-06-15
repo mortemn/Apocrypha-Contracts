@@ -3,14 +3,14 @@ pragma solidity 0.8.11;
 
 import {ERC721} from "solmate/tokens/ERC721.sol";
 import {Auth, Authority} from "solmate/auth/Auth.sol";
+import {Owned} from "solmate/auth/Owned.sol";
 
 
-contract License is ERC721, Auth {
+contract License is ERC721, Owned {
 
     /*//////////////////////////////////////////////////////////////
                               CONFIGURATION
     //////////////////////////////////////////////////////////////*/
-
     string public baseURI;
     /// @notice Amount of time before token expires.
     uint256 public expiryTime;
@@ -47,14 +47,14 @@ contract License is ERC721, Auth {
         uint256 _expiryTime,
         uint256 _maxSupply,
         uint256 _price,
-        Authority _authority
+        address _author
     ) ERC721(
       // e.g. GEB Access
       string(abi.encodePacked(_name, " License")),
       // at stands for access token
       string(abi.encodePacked("l", _symbol))
     )
-    Auth(Auth(msg.sender).owner(), _authority) { // the Auth(msg.sender) assumes msg.sender is a contract, and is communicating with it through the Auth interface
+    Owned(_author) {
       baseURI = _baseURI;
       lastSold = 1;
       totalSupply = 0;
@@ -66,7 +66,7 @@ contract License is ERC721, Auth {
 
     /// @notice Mints a specified amount of tokens if msg sender is a license holder. 
     /// @param amount Amount of tokens to be minted.
-    function mint(uint256 amount) external requiresAuth {
+    function mint(uint256 amount) external onlyOwner {
       require(totalSupply + amount <= maxSupply, "MAX_SUPPLY_REACHED");
 
       // Won't overflow (New total supply is less than max supply)
@@ -87,6 +87,7 @@ contract License is ERC721, Auth {
     function buy() external payable {
       require(lastSold < totalSupply, "MAX_SUPPLY_REACHED");
       require(msg.value == price, "INCORRECT_PRICE");
+      // require(msg.value => price, "INCORRECT_PRICE");
       
       // allocate half the funds to contract owner and other half to license holder who minted the token.
       payable(owner).transfer(msg.value);
@@ -120,9 +121,11 @@ contract License is ERC721, Auth {
       return false;
     }
 
+    
+
     /// @notice Sets a new token expiry time.
     /// @param time New expiry time. 
-    function setExpiryTime(uint256 time) external requiresAuth {
+    function setExpiryTime(uint256 time) external onlyOwner {
       expiryTime = time;
 
       emit ExpiryTimeUpdated(time);
@@ -130,7 +133,7 @@ contract License is ERC721, Auth {
 
     /// @notice Sets a new max supply.
     /// @param supply New max supply.
-    function setMaxSupply(uint256 supply) external requiresAuth {
+    function setMaxSupply(uint256 supply) external onlyOwner {
       // New max supply has to be higher than current supply.
       require(totalSupply < supply, "SUPPLY_ALREADY_REACHED");
       maxSupply = supply;
@@ -144,7 +147,7 @@ contract License is ERC721, Auth {
 
     /// @notice Sets a new token price.
     /// @param newPrice New price.
-    function setPrice(uint256 newPrice) external requiresAuth {
+    function setPrice(uint256 newPrice) external onlyOwner {
       price = newPrice;
 
       emit PriceUpdated(newPrice);
@@ -166,6 +169,12 @@ contract License is ERC721, Auth {
 
       return false; 
     }
+
+
+    function checkExpiryDate(uint256 id) public view returns (uint256) {
+      uint256 expiryDate = getExpiryDate[id];
+      return expiryDate;
+    }
     
     // / TODO: return our API along with specific information about token in it e.g. expiry time.
     function tokenURI(uint256 tokenId)
@@ -185,4 +194,8 @@ contract License is ERC721, Auth {
 
     /// @dev Allows contract to receive Eth.
     receive() external payable {}
+
+    function changeFlag() public onlyOwner returns (bool) {
+      return (true);
+    }
 }
