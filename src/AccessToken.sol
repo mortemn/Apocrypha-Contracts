@@ -192,7 +192,6 @@ contract AccessToken is ERC721, Auth {
       return false;
     }
 
-    /// TODO: return our API along with specific information about token in it e.g. expiry time.
     function tokenURI(uint256 id)
         public
         view
