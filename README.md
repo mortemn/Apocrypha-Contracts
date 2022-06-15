@@ -31,10 +31,11 @@ Advanced ways to use `foundryup`, and other documentation, can be found in the
 
 ### Hardhat
 
+```sh
 `npm install` or `yarn`
 ```
 ### Tests
 
-```
+```sh
 forge test -vv
 ```
