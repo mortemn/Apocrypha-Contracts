@@ -1,72 +1,9 @@
-# Combination Pizza Hut & Taco Bell
+# Apocrypha Contracts
 
-Foundry && HardHat starter template.
+Minimal ERC721 implementation for academic articles. Distribution of access control tokens from licensed holders.
 
-## Motivation
+## Architecture
 
-I like them both. With this set-up we get:
-
-- Unit tests written in solidity
-- Foundry's cast
-- Integration testing with Hardhat
-- Hardhat test coverage
-- Hardhat deploy & verify
-- Typescript
-
-### Foundry
-
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum
-application development written in Rust.**
-
-Foundry consists of:
-
-- [**Forge**](./forge): Ethereum testing framework (like Truffle, Hardhat and
-  Dapptools).
-- [**Cast**](./cast): Swiss army knife for interacting with EVM smart contracts,
-  sending transactions and getting chain data.
-
-**Need help getting started with Foundry? Read the [📖 Foundry
-Book][foundry-book] (WIP)!**
-
-[foundry-book]: https://onbjerg.github.io/foundry-book/
-
-### Hardhat
-
-Hardhat is an Ethereum development environment for professionals. It facilitates performing frequent tasks, such as running tests, automatically checking code for mistakes or interacting with a smart contract.
-
-On [Hardhat's website](https://hardhat.org) you will find:
-
-- [Guides to get started](https://hardhat.org/getting-started/)
-- [Hardhat Network](https://hardhat.org/hardhat-network/)
-- [Plugin list](https://hardhat.org/plugins/)
-
-## Directory Structure
-
-```
-integration
-|- mover.test.ts - "Hardhat integration tests"
-lib
-|- forge-std - "Test dependency"
-scripts
-`- deploy.ts - "hardhat deploy script"
-src
-|- test
-|  |- mocks
-|  |  `- MockNFT.sol - "Mock NFT for testing"
-|  `- Mover.t.sol - "Unit testi in solidity"
-`- Mover.sol - "Solidity contract"
-.env.example - "Expamle dot env"
-.gitignore - "Ignore workfiles"
-.gitmodules -  "Dependecy modules"
-.solcover.js - "Configure coverage"
-.solhint.json - "Configure solidity lint"
-foundry.toml - "Configure foundry"
-hardhat.config.ts - "Configure hardhat"
-package.json - "Node dependencies"
-README.md - "This file"
-remappings.txt - "Forge dependcy mappings"
-slither.config.json - "Configure slither"
-```
 
 ## Installation
 
@@ -95,33 +32,37 @@ Advanced ways to use `foundryup`, and other documentation, can be found in the
 ### Hardhat
 
 `npm install` or `yarn`
-
-## NPM Commands
-
-```sh
-Scripts available via `npm run-script`:
-  compile
-    npx hardhat compile
-  coverage
-    npx hardhat coverage --solcoverjs .solcover.js
-  deploy
-    npx hardhat run scripts/deploy.ts
-  integration
-    npx hardhat test
-  verify
-    npx hardhat verify
 ```
-## Adding dependency
+### Tests
 
-Prefer `npm` packages when available and update the remappings.
+```
+forge test -vv
+```
 
-### Example
+## Directory Structure
 
-install:
-`yarn add -D @openzeppelin/contracts`
-
-remapping:
-`@openzeppelin/contracts=node_modules/@openzeppelin/contracts`
-
-import:
-`import "@openzeppelin/contracts/token/ERC20/ERC20.sol";`
+```
+integration
+|- mover.test.ts - "Hardhat integration tests"
+lib
+|- forge-std - "Test dependency"
+scripts
+`- deploy.ts - "hardhat deploy script"
+src
+|- test
+|  |- mocks
+|  |  `- MockNFT.sol - "Mock NFT for testing"
+|  `- Mover.t.sol - "Unit testi in solidity"
+`- Mover.sol - "Solidity contract"
+.env.example - "Expamle dot env"
+.gitignore - "Ignore workfiles"
+.gitmodules -  "Dependecy modules"
+.solcover.js - "Configure coverage"
+.solhint.json - "Configure solidity lint"
+foundry.toml - "Configure foundry"
+hardhat.config.ts - "Configure hardhat"
+package.json - "Node dependencies"
+README.md - "This file"
+remappings.txt - "Forge dependcy mappings"
+slither.config.json - "Configure slither"
+```
