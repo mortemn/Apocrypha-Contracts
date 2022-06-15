@@ -45,13 +45,14 @@ contract License is ERC721, Owned {
         string memory _baseURI,
         uint256 _expiryTime,
         uint256 _maxSupply,
-        uint256 _price
+        uint256 _price,
+        address _owner
     ) ERC721(
       // e.g. GEB Access
       string(abi.encodePacked(_name, " License")),
       // at stands for access token
       string(abi.encodePacked("l", _symbol))
-    ) Owned(msg.sender) { // the Auth(msg.sender) assumes msg.sender is a contract, and is communicating with it through the Auth interface
+    ) Owned(_owner) { // the Auth(msg.sender) assumes msg.sender is a contract, and is communicating with it through the Auth interface
       baseURI = _baseURI;
       lastSold = 1;
       totalSupply = 0;
@@ -180,4 +181,6 @@ contract License is ERC721, Owned {
 
     /// @dev Allows contract to receive Eth.
     receive() external payable {}
+
+
 }
