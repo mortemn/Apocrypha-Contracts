@@ -4,6 +4,14 @@ Minimal ERC721 implementation for academic articles. Distribution of access cont
 
 ## Architecture
 
+```
+├── License.sol - "License for distributing access tokens"
+├── AccessToken.sol - "Distributed access for academic articles and journals"
+├── AuthorityModule.sol - "Authority for access tokens"
+├── Factory.sol - "Factory for deploying contracts"
+└── test
+    └── FactoryTest.t.sol
+ ```
 
 ## Installation
 
