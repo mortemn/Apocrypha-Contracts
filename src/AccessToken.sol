@@ -207,10 +207,4 @@ contract AccessToken is ERC721, Auth {
                 ? string(abi.encodePacked(baseURI, string(abi.encodePacked(id)), ".json"))
                 : "";
     }
-
-    bool flag;
-    function changeFlag() external requiresAuth returns (bool) {
-      flag = true;
-      return flag; 
-    } 
 }
