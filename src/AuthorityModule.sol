@@ -5,9 +5,9 @@ import {Authority} from "solmate/auth/Auth.sol";
 import {License} from "./License.sol";
 
 contract AuthorityModule is Authority {
-  License license;
-  address accessToken;
-  address owner;
+  License public license;
+  address public accessToken;
+  address public owner;
 
   constructor(address _owner, License _license) {
     license = _license;

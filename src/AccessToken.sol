@@ -33,7 +33,7 @@ contract AccessToken is ERC721, Auth {
     }
 
     /// @notice Checks if token is sold or not. 
-    mapping(uint256 => bool)isSold;
+    mapping(uint256 => bool) public isSold;
 
     /// @notice Emitted after a new price is set.
     /// @param newPrice New price of the token.
@@ -108,13 +108,14 @@ contract AccessToken is ERC721, Auth {
 
       uint256 split = msg.value.mulDivDown(5, 10);
       
+      isSold[id] = true;
+
       // allocate half the funds to contract owner and other half to license holder who minted the token.
       payable(owner).transfer(split);
       payable(getTokenData[id].minter).transfer(split);
-      
+
       // Transfer token from license holder to buyer.
       transferFrom(getTokenData[id].minter, msg.sender, id);
-      isSold[id] = true;
 
       emit TokenSold(id, msg.sender);
     }
@@ -206,9 +207,6 @@ contract AccessToken is ERC721, Auth {
                 ? string(abi.encodePacked(baseURI, string(abi.encodePacked(id)), ".json"))
                 : "";
     }
-
-    /// @dev Allows contract to receive Eth.
-    receive() external payable {}
 
     bool flag;
     function changeFlag() public requiresAuth returns (bool) {

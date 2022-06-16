@@ -178,9 +178,4 @@ contract License is ERC721, Owned {
                 ? string(abi.encodePacked(baseURI, string(abi.encodePacked(tokenId)), ".json"))
                 : "";
     }
-
-    /// @dev Allows contract to receive Eth.
-    receive() external payable {}
-
-
 }
