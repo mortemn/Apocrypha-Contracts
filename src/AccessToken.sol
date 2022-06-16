@@ -209,7 +209,7 @@ contract AccessToken is ERC721, Auth {
     }
 
     bool flag;
-    function changeFlag() public requiresAuth returns (bool) {
+    function changeFlag() external requiresAuth returns (bool) {
       flag = true;
       return flag; 
     } 

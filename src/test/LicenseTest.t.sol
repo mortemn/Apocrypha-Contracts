@@ -113,12 +113,11 @@ contract LicenseTest is Test {
         assertTrue(license.hasValidLicense(bob));
         assertEq(license.getExpiryDate(1), expiryTime + block.timestamp);
         hoax(bob);
-        assertTrue(accessToken.changeFlag());
+        accessToken.mint(1);
         cheats.warp(block.timestamp + expiryTime);
         hoax(bob);
         vm.expectRevert(abi.encodePacked("UNAUTHORIZED"));
-        accessToken.changeFlag();
-        
+        accessToken.mint(1);
     }
 
 
@@ -166,8 +165,7 @@ contract LicenseTest is Test {
         console.log(address(license));
         console.log(address(authorityModule.getLicense()));
         console.log("bob has validLicense:", authorityModule.userHasLicense(bob));
-        assertTrue(accessToken.changeFlag());
-    
+        accessToken.mint(1); 
     }
 
     

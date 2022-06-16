@@ -42,7 +42,7 @@ contract AuthorityModule is Authority {
     
     // return(true);
     // return (userLicense.hasValidLicense(user));
-    return (user == userLicense.owner() || userLicense.hasValidLicense(user) || functionSig == bytes4(abi.encodeWithSignature("mint(uint256)"))) && target == accessToken;
+    return (user == userLicense.owner() || userLicense.hasValidLicense(user) && functionSig == bytes4(abi.encodeWithSignature("mint(uint256)"))) && target == accessToken;
     
 
   }
