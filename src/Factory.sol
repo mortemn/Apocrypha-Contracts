@@ -37,8 +37,8 @@ contract Factory is Auth {
 
     event AccessTokenDeployed(AccessToken accessToken); 
 
-    function deployLicense (string memory name, string memory symbol, string memory baseURI, uint256 expiryTime, uint256 maxSupply, uint256 price, address owner) external returns (License license) {
-      license = new License(name, symbol, baseURI, expiryTime, maxSupply, price, owner); 
+    function deployLicense (string memory name, string memory symbol, string memory baseURI, uint256 expiryTime, uint256 maxSupply, uint256 price) external returns (License license) {
+      license = new License(name, symbol, baseURI, expiryTime, maxSupply, price, msg.sender); 
       emit LicenseDeployed(license);
       return (license);
     }

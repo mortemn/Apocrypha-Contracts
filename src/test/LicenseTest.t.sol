@@ -55,7 +55,7 @@ contract LicenseTest is Test {
     function setUp() public {
       factory = new Factory(address(this), Authority(address(0)));
       hoax(alice);
-      license = factory.deployLicense(licenseName, licenseSymbol, licenseBaseURI, licenseExpiryTime, licenseMaxSupply, licensePrice, alice);
+      license = factory.deployLicense(licenseName, licenseSymbol, licenseBaseURI, licenseExpiryTime, licenseMaxSupply, licensePrice);
       authorityModule = factory.deployAuthorityModule(license);
       accessToken = factory.deployAccessToken(accessTokenName, accessTokenSymbol, accessTokenBaseURI, accessTokenExpiryTime, accessTokenMaxSupply, accessTokenPrice, authorityModule);
       authorityModule.setAccessTokenAddress(address(accessToken));

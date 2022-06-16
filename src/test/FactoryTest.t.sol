@@ -39,12 +39,12 @@ contract FactoryTest is Test {
     }
 
     function testDeploy2Contracts() public {
-      license = factory.deployLicense("GEB", "GEB", "geb.com", 10 days, 10, 0.1 ether, alice);
+      license = factory.deployLicense("GEB", "GEB", "geb.com", 10 days, 10, 0.1 ether);
       authorityModule = factory.deployAuthorityModule(license);
     }
 
     function testDeployContracts() public {
-      license = factory.deployLicense("GEB", "GEB", "geb.com", 10 days, 10, 0.1 ether, alice);
+      license = factory.deployLicense("GEB", "GEB", "geb.com", 10 days, 10, 0.1 ether);
       authorityModule = factory.deployAuthorityModule(license);
       accessToken = factory.deployAccessToken("GEB", "GEB", "geb.com", 100 days, 100, 0.01 ether, authorityModule);
 
@@ -52,7 +52,7 @@ contract FactoryTest is Test {
     }
 
     function testFalseDeployContracts() public {
-      license = factory.deployLicense("GEB", "GEB", "geb.com", 10 days, 10, 0.1 ether, alice);  
+      license = factory.deployLicense("GEB", "GEB", "geb.com", 10 days, 10, 0.1 ether);
       authorityModule = factory.deployAuthorityModule(license);
 
       assertFalse(factory.areContractsDeployed(license, authorityModule, AccessToken(payable(address(0xBEEF)))));
@@ -60,7 +60,7 @@ contract FactoryTest is Test {
 
     function testOwners() public {
         hoax(alice);
-        license = factory.deployLicense("GEB", "GEB", "geb.com", 10 days, 10, 0.1 ether, alice);
+        license = factory.deployLicense("GEB", "GEB", "geb.com", 10 days, 10, 0.1 ether);
         authorityModule = factory.deployAuthorityModule(license);
         accessToken = factory.deployAccessToken("GEB", "GEB", "geb.com", 100 days, 100, 0.01 ether, authorityModule);
 
@@ -80,7 +80,7 @@ contract FactoryTest is Test {
 
     function testAuthorities() public {
         hoax(alice);
-        license = factory.deployLicense("GEB", "GEB", "geb.com", 10 days, 10, 0.1 ether, alice);
+        license = factory.deployLicense("GEB", "GEB", "geb.com", 10 days, 10, 0.1 ether);
         authorityModule = factory.deployAuthorityModule(license);
         accessToken = factory.deployAccessToken("GEB", "GEB", "geb.com", 100 days, 100, 0.01 ether, authorityModule);
         assertEq(address(factory.authority()), address(0));
