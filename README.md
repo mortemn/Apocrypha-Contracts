@@ -12,6 +12,7 @@ Minimal ERC721 implementation for academic articles. Distribution of access cont
 ├── AuthorityModule.sol - "Authority for access tokens"
 └── test
     └── FactoryTest.t.sol
+    └── LicenseTest.t.sol
  ```
 
 ## Installation
