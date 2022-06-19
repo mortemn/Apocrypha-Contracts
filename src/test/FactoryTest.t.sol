@@ -173,12 +173,19 @@ contract FactoryTest is Test {
       console.log("owner of accessToken:", accessToken.owner()); 
     }
 
-    // function testAuthorities() public {
-    //     hoax(alice);
-    //     license = factory.deployLicense(name, symbol, baseURI, licenseExpiryTime, licenseMaxSupply, licensePrice);
-    //     authorityModule = factory.deployAuthorityModule(license);
-    //     accessToken = factory.deployAccessToken(name, symbol, baseURI, 100 days, 100, 0.01 ether, authorityModule);
-    //     assertEq(address(factory.authority()), address(0));
-    //     assertEq(address(accessToken.authority()), address(authorityModule));   
-    // }
+    function testAuthorities() public {
+      masterNFT = factory.deployMasterNFT(name, symbol, baseURI);
+      assertTrue(address(masterNFT).code.length > 0);
+      masterNFTAuthorityModule = factory.deployMasterNFTAuthorityModule(masterNFT);
+      assertTrue(address(masterNFTAuthorityModule).code.length > 0);
+      license = factory.deployLicense(name, symbol, baseURI, licenseExpiryTime, licenseMaxSupply, licensePrice, masterNFTAuthorityModule);
+      assertTrue(address(license).code.length > 0);
+      authorityModule = factory.deployAuthorityModule(license);
+      assertTrue(address(authorityModule).code.length > 0); 
+      accessToken = factory.deployAccessToken(name, symbol, baseURI, accessTokenExpiryTime, accessTokenMaxSupply, accessTokenPrice, authorityModule);
+
+      assertEq(address(license.authority()), address(masterNFTAuthorityModule));
+      assertEq(address(accessToken.authority()), address(authorityModule));
+    }
+
 }
