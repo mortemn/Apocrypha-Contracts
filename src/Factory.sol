@@ -9,6 +9,11 @@ import {License} from "./License.sol";
 import {AuthorityModule} from "./AuthorityModule.sol";
 import {AccessToken} from "./AccessToken.sol";
 
+import {MasterNFT} from "./MasterNFT.sol";
+import {MasterNFTAuthorityModule} from "./MasterNFTAuthorityModule.sol";
+
+
+
 
 /// @title Combined Factory
 /// @author 
@@ -37,23 +42,42 @@ contract Factory is Auth {
 
     event AccessTokenDeployed(AccessToken accessToken); 
 
-    function deployLicense (string memory name, string memory symbol, string memory baseURI, uint256 expiryTime, uint256 maxSupply, uint256 price) external returns (License license) {
-      license = new License(name, symbol, baseURI, expiryTime, maxSupply, price, msg.sender); 
+    event MasterNFTDeployed(MasterNFT masterNFT);
+
+    event MasterNFTAuthorityModuleDeployed(MasterNFTAuthorityModule masterNFTAuthorityModule);
+
+
+    function deployLicense (string memory name, string memory symbol, string memory baseURI, uint256 expiryTime, uint256 maxSupply, uint256 price, Authority authority) external returns (License license) {
+      license = new License(name, symbol, baseURI, expiryTime, maxSupply, price, authority, address(this)); 
       emit LicenseDeployed(license);
       return (license);
     }
 
     function deployAuthorityModule (License license) external returns (AuthorityModule authorityModule) {
-      authorityModule = new AuthorityModule(msg.sender, license);
+      authorityModule = new AuthorityModule(address(this), license);
       emit AuthorityModuleDeployed(authorityModule);
       return (authorityModule);
     }
 
     function deployAccessToken (string memory name, string memory symbol, string memory baseURI, uint256 expiryTime, uint256 maxSupply, uint256 price, AuthorityModule authorityModule) external returns (AccessToken accessToken) {
-      accessToken = new AccessToken(name, symbol, baseURI, expiryTime, maxSupply, price, authorityModule); 
+      accessToken = new AccessToken(name, symbol, baseURI, expiryTime, maxSupply, price, authorityModule, address(this)); 
       emit AccessTokenDeployed(accessToken);
       return (accessToken);
     }
+
+    function deployMasterNFT (string memory name, string memory symbol, string memory baseURI) external returns (MasterNFT masterNFT) {
+      masterNFT = new MasterNFT(name, symbol, baseURI);
+      emit MasterNFTDeployed(masterNFT);
+      return (masterNFT);
+    }
+
+    function deployMasterNFTAuthorityModule (MasterNFT masterNFT) external returns (MasterNFTAuthorityModule masterNFTAuthorityModule) {
+      masterNFTAuthorityModule = new MasterNFTAuthorityModule(address(this), masterNFT);
+      emit MasterNFTAuthorityModuleDeployed(masterNFTAuthorityModule);
+      return (masterNFTAuthorityModule);
+    }
+
+
 
     function areContractsDeployed(License license, AuthorityModule authorityModule, AccessToken accessToken) external view returns (bool) {
       return (address(license).code.length > 0) && (address(authorityModule).code.length > 0) && (address(accessToken).code.length > 0);

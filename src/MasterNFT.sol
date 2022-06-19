@@ -7,8 +7,10 @@ import {Owned} from "solmate/auth/Owned.sol";
 contract MasterNFT is ERC721, Owned {
 
   string public baseURI;
-  uint256 public maxSupply;
+  uint256 public maxSupply = 1;
   
+  uint256 public minted;
+
   constructor(
     string memory _name,
     string memory _symbol,
@@ -20,8 +22,10 @@ contract MasterNFT is ERC721, Owned {
     baseURI = _baseURI;
   }
 
-  function mint(address to, uint256 id) external {
-    _safeMint(to, id);
+  function mint(address to) external {
+    require(minted == 0, "you've already minted 1 masterNFT, and there could be only one.");
+    _safeMint(to, minted);
+    minted = 1;
   }
 
   function tokenURI(uint256 tokenId)
@@ -37,4 +41,5 @@ contract MasterNFT is ERC721, Owned {
               ? string(abi.encodePacked(baseURI, string(abi.encodePacked(tokenId)), ".json"))
               : "";
   }
+
 }

@@ -64,14 +64,15 @@ contract AccessToken is ERC721, Auth {
         uint256 _expiryTime,
         uint256 _maxSupply,
         uint256 _price,
-        Authority _authority
+        Authority _authority,
+        address _owner
     ) ERC721(
       // e.g. GEB Access
       string(abi.encodePacked(_name, " Access")),
       // at stands for access token.
       string(abi.encodePacked("at", _symbol))
     )
-    Auth(Auth(msg.sender).owner(), _authority) {
+    Auth(_owner, _authority) {
       baseURI = _baseURI;
       totalSupply = 0;
       expiryTime = _expiryTime;
