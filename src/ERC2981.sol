@@ -19,9 +19,9 @@ abstract contract ERC2981 {
     //////////////////////////////////////////////////////////////*/
 
     /// @dev Sets token royalties.
-    /// @param TokenId the token id for which we register the royalties.
-    /// @param Recipient recipient of the royalties.
-    /// @param Value percentage (using 2 decimals - 10000 = 100, 0 = 0).
+    /// @param tokenId the token id for which we register the royalties.
+    /// @param recipient recipient of the royalties.
+    /// @param value percentage (using 2 decimals - 10000 = 100, 0 = 0).
     function _setTokenRoyalty(
       uint256 tokenId,
       address recipient,
