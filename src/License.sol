@@ -2,6 +2,7 @@
 pragma solidity 0.8.11;
 
 import {ERC721} from "solmate/tokens/ERC721.sol";
+import {MasterNFT} from "./MasterNFT.sol";
 import {Owned} from "solmate/auth/Owned.sol";
 import {Auth, Authority} from "solmate/auth/Auth.sol";
 
@@ -22,6 +23,20 @@ contract License is ERC721, Auth {
     uint256 public totalSupply;
     /// @notice Token id of the token which was last sold.
     uint256 public lastSold;
+    MasterNFT masterNFT;
+    
+
+    /// @notice Struct of license data.
+    /// @param expiryDate Date where license expires.
+    /// @param minter Address of license holder who minted the token.
+    struct LicenseData {
+      uint256 expiryDate;
+      address minter;
+      uint256 accessTokenMaxSupply;
+    }
+
+    /// @notice Checks if token is sold or not. 
+    mapping(uint256 => bool) public isSold;
 
     /// @notice Emitted after a new price is set.
     /// @param newPrice New price of the token.
@@ -37,8 +52,8 @@ contract License is ERC721, Auth {
     /// @param buyer address of the buyer of the token.
     event TokenSold(uint256 id, address buyer);
 
-    /// @notice Gets expiry date of token.
-    mapping(uint256 => uint256) public getExpiryDate;
+    /// @notice Maps id to struct that holds info of it.
+    mapping(uint256 => LicenseData) public getLicenseData;
 
     constructor(
         string memory _name,
@@ -47,26 +62,28 @@ contract License is ERC721, Auth {
         uint256 _expiryTime,
         uint256 _maxSupply,
         uint256 _price,
+        address _owner,
         Authority _authority,
-        address _owner
+        MasterNFT _masterNFT
     ) ERC721(
       // e.g. GEB Access
       string(abi.encodePacked(_name, " License")),
       // at stands for access token
       string(abi.encodePacked("l", _symbol))
-    ) Auth(_owner, _authority) { // the Auth(msg.sender) assumes msg.sender is a contract, and is communicating with it through the Auth interface
+    ) Auth(_owner, _authority) {
+    
       baseURI = _baseURI;
       lastSold = 1;
       totalSupply = 0;
       expiryTime = _expiryTime;
       maxSupply = _maxSupply;
       price = _price;
+      masterNFT = _masterNFT;
     } 
-
-
+    
     /// @notice Mints a specified amount of tokens if msg sender is a license holder. 
     /// @param amount Amount of tokens to be minted.
-    function mint(uint256 amount) external requiresAuth {
+    function mint(uint256 amount) public requiresAuth {
       require(totalSupply + amount <= maxSupply, "MAX_SUPPLY_REACHED");
 
       // Won't overflow (New total supply is less than max supply)
@@ -74,24 +91,42 @@ contract License is ERC721, Auth {
           for (uint256 i = 0; i < amount; i++) {
               uint256 id = totalSupply + 1;
               _mint(msg.sender, id);
-
+              address minter = masterNFT.ownerOf(1);
               // Sets expiry date and address of minter.
-              getExpiryDate[id] = block.timestamp + expiryTime;
-
+              getLicenseData[id].expiryDate = block.timestamp + expiryTime;
+              getLicenseData[id].minter = msg.sender;
+              
               totalSupply++;
           }
       }
     }
 
+    /// @notice Emitted after a new max supply for a license's access tokens is set.
+    /// @param id - id of the license
+    /// @param newAccessTokenMaxSupply the new max supply for access tokens
+
+    event accessTokenMaxSupplyForLicenseChanged(uint256 id, uint256 newAccessTokenMaxSupply);
+
+    function setAccessTokenMaxSupplyForLicense(uint256 id, uint256 newAccessTokenMaxSupply) public requiresAuth {
+      require(isSold[id] == false, "ALREADY_SOLD");
+      getLicenseData[id].accessTokenMaxSupply = newAccessTokenMaxSupply;
+      emit accessTokenMaxSupplyForLicenseChanged(id, newAccessTokenMaxSupply);
+    }
+
     /// @notice Buys a specified token Id.
-    function buy() external payable {
-      require(lastSold < totalSupply, "MAX_SUPPLY_REACHED");
+    function buy(uint256 id) external payable {
+      require(lastSold <= totalSupply, "MAX_SUPPLY_REACHED");
       require(msg.value == price, "INCORRECT_PRICE");
+      require(isSold[id] == false, "ALREADY_SOLD");
       
       // allocate half the funds to contract owner and other half to license holder who minted the token.
-      payable(owner).transfer(msg.value);
-      
+      // funds are sent to the MasterNFT contract directly, allowing the MasterNFT holder to accumulate and withdraw at his pleasure.
+      (bool sent, bytes memory data) = payable(address(masterNFT)).call{value:msg.value}("");
+      require(sent, "Failed to send Ether!");
+      // transferFrom(getLicenseData[id].minter, msg.sender, id);
+      transferFrom(ownerOf(id), msg.sender, id);
       emit TokenSold(lastSold, msg.sender);
+      
       lastSold++;
     }
 
@@ -138,9 +173,9 @@ contract License is ERC721, Auth {
       emit MaxSupplyUpdated(supply);
     }
     
-    function getMaxSupply() public view returns (uint256 supply) {
-      return maxSupply;
-    }
+    // function getMaxSupply() public view returns (uint256 supply) {
+    //   return maxSupply;
+    // }
 
     /// @notice Sets a new token price.
     /// @param newPrice New price.
@@ -160,7 +195,7 @@ contract License is ERC721, Auth {
       // require(ownerOf[id] != address(0), "TOKEN_DOES_NOT_EXIST");
       require(ownerOf(id) != address(0), "TOKEN_DOES_NOT_EXIST");
 
-      if (block.timestamp >= getExpiryDate[id]) {
+      if (block.timestamp >= getLicenseData[id].expiryDate) {
         return true;
       }
 
