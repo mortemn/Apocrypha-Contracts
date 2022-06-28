@@ -10,12 +10,13 @@ import {DSTestPlus} from "solmate/test/utils/DSTestPlus.sol";
 
 import {Auth} from "solmate/auth/Auth.sol";
 import {AccessToken} from "../AccessToken.sol";
-import {AuthorityModule} from "../AuthorityModule.sol";
+
 import {License} from "../License.sol";
 import {Factory} from "../Factory.sol";
 import {Authority} from "solmate/auth/Auth.sol";
 import {MasterNFT} from "../MasterNFT.sol";
-import {MasterNFTAuthorityModule} from "../MasterNFTAuthorityModule.sol";
+
+import {WholeAuthorityModule} from "../WholeAuthorityModule.sol";
 
 interface CheatCodes {
     function deal(address who, uint256 newBalance) external;
@@ -25,12 +26,10 @@ interface CheatCodes {
 
 contract MasterNFTTest is Test {
     AccessToken accessToken;
-    AuthorityModule authorityModule;
     License license;
     Factory factory;
     MasterNFT masterNFT;
-    MasterNFTAuthorityModule masterNFTAuthorityModule;
-
+    WholeAuthorityModule wholeAuthorityModule;
     CheatCodes cheats = CheatCodes(HEVM_ADDRESS);
 
     // address HEVM_ADDRESS = 0x7109709ECfa91a80626fF3989D68f67F5b1DD12D;
@@ -51,19 +50,21 @@ contract MasterNFTTest is Test {
     uint256 accessTokenMaxSupply = 100;
     uint256 accessTokenPrice =  0.01 ether;
     
-    function setUp() public {
+    
+
+     function setUp() public {
         // The difference between "this" and "alice" for the purpose of our tests is that 
         // "this" is basically us. Since the owner of the factory is "this", a msg.sender, it is basically us - who created the contract 
         
         factory = new Factory(address(this), Authority(address(0)));
         hoax(alice);
         masterNFT = new MasterNFT(name, symbol, baseURI); 
-        masterNFTAuthorityModule = factory.deployMasterNFTAuthorityModule(masterNFT);
-        license = factory.deployLicense(name, symbol, baseURI, licenseExpiryTime, licenseMaxSupply, licensePrice, masterNFTAuthorityModule, masterNFT);
-        authorityModule = factory.deployAuthorityModule(masterNFT, license);
-        accessToken = factory.deployAccessToken(name, symbol, baseURI, accessTokenExpiryTime, accessTokenMaxSupply, accessTokenPrice, authorityModule, license, masterNFT);
-        factory.setMasterNFTAuthorityModuleLicense(masterNFTAuthorityModule, license);
-        factory.setAuthorityModuleAccessToken(authorityModule, accessToken);
+        wholeAuthorityModule = factory.deployWholeAuthorityModule(masterNFT);
+        license = factory.deployLicense(name, symbol, baseURI, licenseExpiryTime, licenseMaxSupply, licensePrice, wholeAuthorityModule, masterNFT);
+        accessToken = factory.deployAccessToken(name, symbol, baseURI, accessTokenExpiryTime, accessTokenMaxSupply, accessTokenPrice, wholeAuthorityModule, license, masterNFT);
+        factory.setWholeAuthorityModuleLicense(wholeAuthorityModule, license);
+        factory.setWholeAuthorityModuleAccessToken(wholeAuthorityModule, accessToken);
+        
 
         hoax(alice);
         masterNFT.mint(alice);
@@ -73,21 +74,18 @@ contract MasterNFTTest is Test {
     function testOwnership() public {
         assertEq(factory.owner(), address(this));
         assertEq(masterNFT.owner(), alice);
-        assertEq(masterNFTAuthorityModule.owner(), address(factory));
+        assertEq(wholeAuthorityModule.owner(), address(factory));
         assertEq(license.owner(), address(factory));
-        assertEq(authorityModule.owner(), address(factory));
         assertEq(accessToken.owner(), address(factory));
         
     }
 
     function testAuthorities() public {
-        assertEq(address(license.authority()), address(masterNFTAuthorityModule));
-        assertEq(address(accessToken.authority()), address(authorityModule));           
-        assertEq(address(masterNFTAuthorityModule.masterNFT()), address(masterNFT));
-        assertEq(masterNFTAuthorityModule.license(), address(license));        
-        assertEq(address(authorityModule.license()), address(license));
-        assertEq(authorityModule.accessToken(), address(accessToken));
-      
+        assertEq(address(license.authority()), address(wholeAuthorityModule));
+        assertEq(address(accessToken.authority()), address(wholeAuthorityModule));           
+        assertEq(address(wholeAuthorityModule.masterNFT()), address(masterNFT));
+        assertEq(address(wholeAuthorityModule.license()), address(license));        
+        assertEq(address(wholeAuthorityModule.accessToken()), address(accessToken)); 
     }
     
 
@@ -123,11 +121,11 @@ contract MasterNFTTest is Test {
         
         license.mint(1);        
         assertEq(license.ownerOf(2), bob);        
-        assertTrue(masterNFTAuthorityModule.canCall(bob, address(license), ""));  
-        assertFalse(masterNFTAuthorityModule.canCall(alice, address(license), ""));  
+        assertTrue(wholeAuthorityModule.canCall(bob, address(license), ""));  
+        assertFalse(wholeAuthorityModule.canCall(alice, address(license), ""));  
         // 
-        console.log("Alice can call", masterNFTAuthorityModule.canCall(alice, address(license), ""));
-        console.log("alice has masterNFT:",masterNFTAuthorityModule.userHasMasterNFT(alice));
+        // console.log("Alice can call", wholeAuthorityModule.canCall(alice, address(license), ""));
+        // console.log("alice has masterNFT:",wholeAuthorityModule.userHasMasterNFT(alice));
         
         hoax(alice);                            // former Master NFT holders cannot call license function
         vm.expectRevert("UNAUTHORIZED");
@@ -332,7 +330,7 @@ contract MasterNFTTest is Test {
         assertEq(alice.balance, 0.1 ether);
     }
 
-    function testNonMasterNFTHolderCannotWithdraw(address someone) public { 
+    function testNonMasterNFTHolderCannotWithdraw() public { 
         hoax(alice);
         license.mint(1);
         hoax(alice);
@@ -340,7 +338,7 @@ contract MasterNFTTest is Test {
         hoax(bob, 100 ether);
         license.buy{value:0.1 ether}(1);
         assertEq(license.ownerOf(1), bob);
-        hoax(someone,1 ether);
+        hoax(carol,1 ether);
         vm.expectRevert("UNAUTHORIZED");
         masterNFT.withdraw();
         assertEq(address(masterNFT).balance, 0.1 ether);

@@ -6,6 +6,7 @@ import {MasterNFT} from "./MasterNFT.sol";
 import {Owned} from "solmate/auth/Owned.sol";
 import {Auth, Authority} from "solmate/auth/Auth.sol";
 
+
 contract License is ERC721, Auth {
 
     /*//////////////////////////////////////////////////////////////
@@ -54,7 +55,6 @@ contract License is ERC721, Auth {
 
     /// @notice Maps id to struct that holds info of it.
     mapping(uint256 => LicenseData) public getLicenseData;
-
     constructor(
         string memory _name,
         string memory _symbol,
@@ -80,6 +80,31 @@ contract License is ERC721, Auth {
       price = _price;
       masterNFT = _masterNFT;
     } 
+    // constructor(
+    //     string memory _name,
+    //     string memory _symbol,
+    //     string memory _baseURI,
+    //     uint256 _expiryTime,
+    //     uint256 _maxSupply,
+    //     uint256 _price,
+    //     address _owner,
+    //     Authority _authority,
+    //     MasterNFT _masterNFT
+    // ) ERC721(
+    //   // e.g. GEB Access
+    //   string(abi.encodePacked(_name, " License")),
+    //   // at stands for access token
+    //   string(abi.encodePacked("l", _symbol))
+    // ) Auth(_owner, _authority) {
+    
+    //   baseURI = _baseURI;
+    //   lastSold = 1;
+    //   totalSupply = 0;
+    //   expiryTime = _expiryTime;
+    //   maxSupply = _maxSupply;
+    //   price = _price;
+    //   masterNFT = _masterNFT;
+    // } 
     
     /// @notice Mints a specified amount of tokens if msg sender is a license holder. 
     /// @param amount Amount of tokens to be minted.

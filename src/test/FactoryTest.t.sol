@@ -9,12 +9,11 @@ import {DSTestPlus} from "solmate/test/utils/DSTestPlus.sol";
 
 import {Auth} from "solmate/auth/Auth.sol";
 import {AccessToken} from "../AccessToken.sol";
-import {AuthorityModule} from "../AuthorityModule.sol";
 import {License} from "../License.sol";
 import {Factory} from "../Factory.sol";
 import {Authority} from "solmate/auth/Auth.sol";
 import {MasterNFT} from "../MasterNFT.sol";
-import {MasterNFTAuthorityModule} from "../MasterNFTAuthorityModule.sol";
+import {WholeAuthorityModule} from "../WholeAuthorityModule.sol";
 
 
 interface CheatCodes {
@@ -25,13 +24,10 @@ interface CheatCodes {
 
 contract FactoryTest is Test {
     AccessToken accessToken;
-    AuthorityModule authorityModule;
     License license;
     Factory factory;
     MasterNFT masterNFT;
-    MasterNFTAuthorityModule masterNFTAuthorityModule;
-    
-    
+    WholeAuthorityModule wholeAuthorityModule;
 
     CheatCodes cheats = CheatCodes(HEVM_ADDRESS);
 //   HEVM_ADDRESS = 0x7109709ECfa91a80626fF3989D68f67F5b1DD12D
@@ -65,59 +61,40 @@ contract FactoryTest is Test {
     }
 
     function testDeployMasterNFTAuthorityModule() public {
-      masterNFT = new MasterNFT(name, symbol, baseURI);
-      masterNFTAuthorityModule = factory.deployMasterNFTAuthorityModule(masterNFT);
-      assertTrue(address(masterNFTAuthorityModule).code.length > 0);
+      startHoax(alice);
+      masterNFT = new MasterNFT(name, symbol, baseURI); 
+      wholeAuthorityModule = factory.deployWholeAuthorityModule(masterNFT);
+      assertTrue(address(wholeAuthorityModule).code.length > 0 );
     }
 
     function testDeployLicense() public {
-      masterNFT = new MasterNFT(name, symbol, baseURI);
-      masterNFTAuthorityModule = factory.deployMasterNFTAuthorityModule(masterNFT);
-      license = factory.deployLicense(name, symbol, baseURI, licenseExpiryTime, licenseMaxSupply, licensePrice, masterNFTAuthorityModule, masterNFT);
+      startHoax(alice);
+      masterNFT = new MasterNFT(name, symbol, baseURI); 
+      wholeAuthorityModule = factory.deployWholeAuthorityModule(masterNFT);
+      license = factory.deployLicense(name, symbol, baseURI, licenseExpiryTime, licenseMaxSupply, licensePrice, wholeAuthorityModule, masterNFT);
       assertTrue(address(license).code.length > 0);
-    }
-
-    function testDeployAuthorityModule() public {
-      masterNFT = new MasterNFT(name, symbol, baseURI);
-      masterNFTAuthorityModule = factory.deployMasterNFTAuthorityModule(masterNFT);
-      license = factory.deployLicense(name, symbol, baseURI, licenseExpiryTime, licenseMaxSupply, licensePrice, masterNFTAuthorityModule, masterNFT);
-      assertTrue(address(license).code.length > 0);
-      authorityModule = factory.deployAuthorityModule(masterNFT, license);
-      assertTrue(address(authorityModule).code.length > 0); 
     }
 
     function testDeployAccessToken() public {
-      masterNFT = new MasterNFT(name, symbol, baseURI);
-      masterNFTAuthorityModule = factory.deployMasterNFTAuthorityModule(masterNFT);
-      license = factory.deployLicense(name, symbol, baseURI, licenseExpiryTime, licenseMaxSupply, licensePrice, masterNFTAuthorityModule, masterNFT);
-      assertTrue(address(license).code.length > 0);
-      authorityModule = factory.deployAuthorityModule(masterNFT, license);
-      assertTrue(address(authorityModule).code.length > 0); 
-      license = factory.deployLicense(name, symbol, baseURI, licenseExpiryTime, licenseMaxSupply, licensePrice, masterNFTAuthorityModule, masterNFT);
+      startHoax(alice);
+      masterNFT = new MasterNFT(name, symbol, baseURI); 
+      wholeAuthorityModule = factory.deployWholeAuthorityModule(masterNFT);
+      license = factory.deployLicense(name, symbol, baseURI, licenseExpiryTime, licenseMaxSupply, licensePrice, wholeAuthorityModule, masterNFT);
+      accessToken = factory.deployAccessToken(name, symbol, baseURI, accessTokenExpiryTime, accessTokenMaxSupply, accessTokenPrice, wholeAuthorityModule, license, masterNFT);
+      assertTrue(address(accessToken).code.length > 0);
     }
 
-
-    function testFalseDeployContracts() public {
-      masterNFT = new MasterNFT(name, symbol, baseURI);
-      masterNFTAuthorityModule = factory.deployMasterNFTAuthorityModule(masterNFT);
-      license = factory.deployLicense(name, symbol, baseURI, licenseExpiryTime, licenseMaxSupply, licensePrice, masterNFTAuthorityModule, masterNFT);
-      authorityModule = factory.deployAuthorityModule(masterNFT, license);
-      assertFalse(factory.areContractsDeployed(license, authorityModule, AccessToken(payable(address(0xBEEF)))));
-    }
 
     
 
     function testSetAuthorityModuleLicenseToken() public {
-      masterNFT = new MasterNFT(name, symbol, baseURI);
-      masterNFTAuthorityModule = factory.deployMasterNFTAuthorityModule(masterNFT);
-      license = factory.deployLicense(name, symbol, baseURI, licenseExpiryTime, licenseMaxSupply, licensePrice, masterNFTAuthorityModule, masterNFT);
-      assertTrue(address(license).code.length > 0);
-      authorityModule = factory.deployAuthorityModule(masterNFT, license);
-      assertTrue(address(authorityModule).code.length > 0); 
-      license = factory.deployLicense(name, symbol, baseURI, licenseExpiryTime, licenseMaxSupply, licensePrice, masterNFTAuthorityModule, masterNFT);
-      assertEq(authorityModule.owner(), address(factory));
-      factory.setAuthorityModuleAccessToken(authorityModule, accessToken);
-      
+      startHoax(alice);
+      masterNFT = new MasterNFT(name, symbol, baseURI); 
+      wholeAuthorityModule = factory.deployWholeAuthorityModule(masterNFT);
+      license = factory.deployLicense(name, symbol, baseURI, licenseExpiryTime, licenseMaxSupply, licensePrice, wholeAuthorityModule, masterNFT);
+      accessToken = factory.deployAccessToken(name, symbol, baseURI, accessTokenExpiryTime, accessTokenMaxSupply, accessTokenPrice, wholeAuthorityModule, license, masterNFT);
+      factory.setWholeAuthorityModuleLicense(wholeAuthorityModule, license);
+      factory.setWholeAuthorityModuleAccessToken(wholeAuthorityModule, accessToken);            
     }
 
 
@@ -134,18 +111,19 @@ contract FactoryTest is Test {
     //   // 
 
     function testOwners() public {
-      hoax(alice);
-      masterNFT = new MasterNFT(name, symbol, baseURI);                             // Whoever calls the MasterNFT constructor is the owner of the contract. In this case it is Alice.
-      masterNFTAuthorityModule = factory.deployMasterNFTAuthorityModule(masterNFT);              
-      license = factory.deployLicense(name, symbol, baseURI, licenseExpiryTime, licenseMaxSupply, licensePrice, masterNFTAuthorityModule, masterNFT);  // Alice is supplied as an argument 
-      authorityModule = factory.deployAuthorityModule(masterNFT, license);
-      accessToken = factory.deployAccessToken(name, symbol, baseURI, accessTokenExpiryTime, accessTokenMaxSupply, accessTokenPrice, authorityModule, license, masterNFT);
+      startHoax(alice);
+      masterNFT = new MasterNFT(name, symbol, baseURI); 
+      wholeAuthorityModule = factory.deployWholeAuthorityModule(masterNFT);
+      license = factory.deployLicense(name, symbol, baseURI, licenseExpiryTime, licenseMaxSupply, licensePrice, wholeAuthorityModule, masterNFT);
+      accessToken = factory.deployAccessToken(name, symbol, baseURI, accessTokenExpiryTime, accessTokenMaxSupply, accessTokenPrice, wholeAuthorityModule, license, masterNFT);
+      factory.setWholeAuthorityModuleLicense(wholeAuthorityModule, license);
+      factory.setWholeAuthorityModuleAccessToken(wholeAuthorityModule, accessToken);            
 
       assertEq(factory.owner(), address(this));
       assertEq(masterNFT.owner(), alice);
-      assertEq(masterNFTAuthorityModule.owner(), address(factory));
+      assertEq(wholeAuthorityModule.owner(), address(factory));
       assertEq(license.owner(), address(factory));
-      assertEq(authorityModule.owner(), address(factory));
+      assertEq(wholeAuthorityModule.owner(), address(factory));
       assertEq(accessToken.owner(), address(factory));
       
       
@@ -154,38 +132,38 @@ contract FactoryTest is Test {
       console.log("masterNFT address:", address(masterNFT));
       // 
       console.log("license address:", address(license));
-      console.log("authorityModule address:", address(authorityModule));
+      console.log("wholeAuthorityModule address:", address(wholeAuthorityModule));
       console.log("accessToken address:", address(accessToken));
 // 
 // 
       console.log("owner of factory:", factory.owner());
       console.log("owner of masterNFT:", masterNFT.owner());
-      console.log("owner of masterNFTAuthorityModule:", masterNFTAuthorityModule.owner());
+      console.log("owner of wholeAuthorityModule:", wholeAuthorityModule.owner());
       // 
       console.log("owner of license:", license.owner());
-      console.log("owner of authorityModule:", authorityModule.owner());
       console.log("owner of accessToken:", accessToken.owner()); 
     }
 
     function testAuthorities() public {
       
-      masterNFT = new MasterNFT(name, symbol, baseURI);
-      masterNFTAuthorityModule = factory.deployMasterNFTAuthorityModule(masterNFT);
-      license = factory.deployLicense(name, symbol, baseURI, licenseExpiryTime, licenseMaxSupply, licensePrice, masterNFTAuthorityModule, masterNFT);
-      authorityModule = factory.deployAuthorityModule(masterNFT, license);
-      accessToken = factory.deployAccessToken(name, symbol, baseURI, accessTokenExpiryTime, accessTokenMaxSupply, accessTokenPrice, authorityModule, license, masterNFT);
-      factory.setMasterNFTAuthorityModuleLicense(masterNFTAuthorityModule, license);
-      factory.setAuthorityModuleAccessToken(authorityModule, accessToken);
+      startHoax(alice);
+      masterNFT = new MasterNFT(name, symbol, baseURI); 
+      wholeAuthorityModule = factory.deployWholeAuthorityModule(masterNFT);
+      license = factory.deployLicense(name, symbol, baseURI, licenseExpiryTime, licenseMaxSupply, licensePrice, wholeAuthorityModule, masterNFT);
+      accessToken = factory.deployAccessToken(name, symbol, baseURI, accessTokenExpiryTime, accessTokenMaxSupply, accessTokenPrice, wholeAuthorityModule, license, masterNFT);
+      factory.setWholeAuthorityModuleLicense(wholeAuthorityModule, license);
+      factory.setWholeAuthorityModuleAccessToken(wholeAuthorityModule, accessToken);            
       
-      assertEq(address(license.authority()), address(masterNFTAuthorityModule));
-      assertEq(address(accessToken.authority()), address(authorityModule));
-
-      assertEq(address(masterNFTAuthorityModule.masterNFT()), address(masterNFT));
-      assertEq(masterNFTAuthorityModule.license(), address(license));
-
-      assertEq(address(authorityModule.license()), address(license));
-      assertEq(authorityModule.accessToken(), address(accessToken));
+      
+      assertEq(address(license.authority()), address(wholeAuthorityModule));
+      assertEq(address(accessToken.authority()), address(wholeAuthorityModule));
+// 
+      assertEq(address(wholeAuthorityModule.masterNFT()), address(masterNFT));
+      assertEq(address(wholeAuthorityModule.license()), address(license));
+// 
       // 
+      assertEq(address(wholeAuthorityModule.accessToken()), address(accessToken));
+      
       assertEq(address(accessToken.license()), address(license));
     }
 

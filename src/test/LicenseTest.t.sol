@@ -10,12 +10,12 @@ import {DSTestPlus} from "solmate/test/utils/DSTestPlus.sol";
 
 import {Auth} from "solmate/auth/Auth.sol";
 import {AccessToken} from "../AccessToken.sol";
-import {AuthorityModule} from "../AuthorityModule.sol";
+
 import {License} from "../License.sol";
 import {Factory} from "../Factory.sol";
 import {Authority} from "solmate/auth/Auth.sol";
 import {MasterNFT} from "../MasterNFT.sol";
-import {MasterNFTAuthorityModule} from "../MasterNFTAuthorityModule.sol";
+import {WholeAuthorityModule} from "../WholeAuthorityModule.sol";
 
 
 interface CheatCodes {
@@ -26,11 +26,10 @@ interface CheatCodes {
 
 contract LicenseTest is Test {
     AccessToken accessToken;
-    AuthorityModule authorityModule;
     License license;
     Factory factory;
     MasterNFT masterNFT;
-    MasterNFTAuthorityModule masterNFTAuthorityModule;
+    WholeAuthorityModule wholeAuthorityModule;
 
     CheatCodes cheats = CheatCodes(HEVM_ADDRESS);
 
@@ -53,20 +52,19 @@ contract LicenseTest is Test {
     uint256 accessTokenPrice =  0.01 ether;
 
     function setUp() public {
-      factory = new Factory(address(this), Authority(address(0)));
-      hoax(alice);
-      masterNFT = new MasterNFT(name, symbol, baseURI); 
-      masterNFTAuthorityModule = factory.deployMasterNFTAuthorityModule(masterNFT);
-      license = factory.deployLicense(name, symbol, baseURI, licenseExpiryTime, licenseMaxSupply, licensePrice, masterNFTAuthorityModule, masterNFT);
-      authorityModule = factory.deployAuthorityModule(masterNFT, license);
-      accessToken = factory.deployAccessToken(name, symbol, baseURI, accessTokenExpiryTime, accessTokenMaxSupply, accessTokenPrice, authorityModule, license, masterNFT);
-      factory.setMasterNFTAuthorityModuleLicense(masterNFTAuthorityModule, license);
-      factory.setAuthorityModuleAccessToken(authorityModule, accessToken);
-      
-      hoax(alice);
-      masterNFT.mint(alice);
-      hoax(alice);
-      license.mint(1);
+        factory = new Factory(address(this), Authority(address(0)));
+        hoax(alice);
+        masterNFT = new MasterNFT(name, symbol, baseURI); 
+        wholeAuthorityModule = factory.deployWholeAuthorityModule(masterNFT);
+        license = factory.deployLicense(name, symbol, baseURI, licenseExpiryTime, licenseMaxSupply, licensePrice, wholeAuthorityModule, masterNFT);
+        accessToken = factory.deployAccessToken(name, symbol, baseURI, accessTokenExpiryTime, accessTokenMaxSupply, accessTokenPrice, wholeAuthorityModule, license, masterNFT);
+        factory.setWholeAuthorityModuleLicense(wholeAuthorityModule, license);
+        factory.setWholeAuthorityModuleAccessToken(wholeAuthorityModule, accessToken);
+
+        hoax(alice);
+        masterNFT.mint(alice);
+        hoax(alice);
+        license.mint(1);
     }
 
     function testTransferLicense() public {
@@ -112,7 +110,7 @@ contract LicenseTest is Test {
         assertEq(license.ownerOf(2), bob);
         
         
-        console.log(authorityModule.masterNFT().ownerOf(1));
+        console.log(wholeAuthorityModule.masterNFT().ownerOf(1));
         console.log(bob);
         hoax(bob);
         accessToken.setMaxSupply(1000);                   // Bob sets the max supply of access tokens each license can mint.
@@ -149,7 +147,7 @@ contract LicenseTest is Test {
         console.log(block.timestamp);               
         uint256 expiryTime = 1000;     
         accessToken.setExpiryTime(expiryTime);      
-        assertTrue(authorityModule.userHasLicense(alice));
+        assertTrue(wholeAuthorityModule.userHasLicense(alice));
         assertEq(license.ownerOf(1), alice);
         accessToken.mint(1);                        
         assertTrue(!accessToken.isExpired(1));          
@@ -183,12 +181,12 @@ contract LicenseTest is Test {
     function testLicenseTransferPreserveAllRights() public {
         hoax(alice);
         license.safeTransferFrom(alice, bob, 1);
-        assertFalse(authorityModule.canCall(bob, address(accessToken), bytes4(abi.encodeWithSignature("setMaxSupply(uint256)"))));
-        assertFalse(authorityModule.canCall(bob, address(accessToken), bytes4(abi.encodeWithSignature("setExpiryTime(uint256)"))));
-        assertFalse(authorityModule.canCall(bob, address(accessToken), bytes4(abi.encodeWithSignature("setPrice(uint256)"))));
-        assertTrue(authorityModule.canCall(bob,  address(accessToken), bytes4(abi.encodeWithSignature("mint(uint256)"))));
+        assertFalse(wholeAuthorityModule.canCall(bob, address(accessToken), bytes4(abi.encodeWithSignature("setMaxSupply(uint256)"))));
+        assertFalse(wholeAuthorityModule.canCall(bob, address(accessToken), bytes4(abi.encodeWithSignature("setExpiryTime(uint256)"))));
+        assertFalse(wholeAuthorityModule.canCall(bob, address(accessToken), bytes4(abi.encodeWithSignature("setPrice(uint256)"))));
+        assertTrue(wholeAuthorityModule.canCall(bob,  address(accessToken), bytes4(abi.encodeWithSignature("mint(uint256)"))));
         
-        assertFalse(authorityModule.canCall(alice,  address(accessToken), bytes4(abi.encodeWithSignature("mint(uint256)"))));
+        assertFalse(wholeAuthorityModule.canCall(alice,  address(accessToken), bytes4(abi.encodeWithSignature("mint(uint256)"))));
     }
 
     function testLicenseSalePreserveAllRights() public {
@@ -196,12 +194,12 @@ contract LicenseTest is Test {
         license.setApprovalForAll(bob, true);
         hoax(bob, 100 ether);
         license.buy{value:0.1 ether}(1);
-        assertFalse(authorityModule.canCall(bob, address(accessToken), bytes4(abi.encodeWithSignature("setMaxSupply(uint256)"))));
-        assertFalse(authorityModule.canCall(bob, address(accessToken), bytes4(abi.encodeWithSignature("setExpiryTime(uint256)"))));
-        assertFalse(authorityModule.canCall(bob, address(accessToken), bytes4(abi.encodeWithSignature("setPrice(uint256)"))));
-        assertTrue(authorityModule.canCall(bob,  address(accessToken), bytes4(abi.encodeWithSignature("mint(uint256)"))));
+        assertFalse(wholeAuthorityModule.canCall(bob, address(accessToken), bytes4(abi.encodeWithSignature("setMaxSupply(uint256)"))));
+        assertFalse(wholeAuthorityModule.canCall(bob, address(accessToken), bytes4(abi.encodeWithSignature("setExpiryTime(uint256)"))));
+        assertFalse(wholeAuthorityModule.canCall(bob, address(accessToken), bytes4(abi.encodeWithSignature("setPrice(uint256)"))));
+        assertTrue(wholeAuthorityModule.canCall(bob,  address(accessToken), bytes4(abi.encodeWithSignature("mint(uint256)"))));
 
-        assertFalse(authorityModule.canCall(alice,  address(accessToken), bytes4(abi.encodeWithSignature("mint(uint256)"))));
+        assertFalse(wholeAuthorityModule.canCall(alice,  address(accessToken), bytes4(abi.encodeWithSignature("mint(uint256)"))));
     }
     
 
