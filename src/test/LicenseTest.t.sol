@@ -60,7 +60,7 @@ contract LicenseTest is Test {
         accessToken = factory.deployAccessToken(name, symbol, baseURI, accessTokenExpiryTime, accessTokenMaxSupply, accessTokenPrice, wholeAuthorityModule, license, masterNFT);
         factory.setWholeAuthorityModuleLicense(wholeAuthorityModule, license);
         factory.setWholeAuthorityModuleAccessToken(wholeAuthorityModule, accessToken);
-
+        factory.setAccessTokenOfLicense(license, accessToken);
         hoax(alice);
         masterNFT.mint(alice);
         hoax(alice);
@@ -206,39 +206,49 @@ contract LicenseTest is Test {
     function testBuyAccessToken() public {
         assertEq(license.ownerOf(1), alice);
         
-        hoax(alice,0 );
-        accessToken.mint(1);
+        hoax(alice,0);
+        license.mintAccessTokens(1);
+        
         assertEq(accessToken.balanceOf(alice), 100);
-        
-        hoax(alice, 0);
-        accessToken.setApprovalForAll(bob, true);
-        
-        hoax(bob, 100 ether);
-        accessToken.buy{value:0.01 ether}(1);
-        assertEq(address(masterNFT).balance, 0.01 ether/2);
-        assertEq(alice.balance, 0.01 ether/2);
-        
-        assertEq(accessToken.ownerOf(1), bob);
+        // 
+        // hoax(alice, 0);
+        // accessToken.setApprovalForAll(bob, true);
+        // 
+        // hoax(bob, 100 ether);
+        // accessToken.buy{value:0.01 ether}(1);
+        // assertEq(address(masterNFT).balance, 0.01 ether/2);
+        // assertEq(alice.balance, 0.01 ether/2);
+        // 
+        // assertEq(accessToken.ownerOf(1), bob);
         
     }
 
     function testBuyDegenerateAccessTokenPath1() public {
       
-    //   // 1. The license holder mints accessTokens
-    //   hoax(alice);
-    //   accessToken.mint(1);
+      // 1. The license holder mints accessTokens
+      hoax(alice);
+      accessToken.mint(1);
+      assertEq(accessToken.ownerOf(1), alice);
+      assertEq(accessToken.ownerOf(2), alice);
+      assertEq(accessToken.ownerOf(100), alice);
+      
+      
+    //   2. She then sells the license 
+      hoax(alice);
+      license.setApprovalForAll(bob, true);
+      hoax(bob);
+      license.buy{value:0.1 ether}(1);
+    
 
-    //   // 2. She then sells the license 
-    //   hoax(alice);
-    //   license.setApprovalForAll(bob, true);
-    //   hoax(bob);
-    //   license.buy{value:0.1 ether}(1);
+    //   assertEq(accessToken.ownerOf(1),   bob);
+    //   assertEq(accessToken.ownerOf(2),   bob);
+    //   assertEq(accessToken.ownerOf(100), bob);
 
-    //   // // 3. The new owner offers the accessTokens for sale
+    //   3. The new owner offers the accessTokens for sale
     //   hoax(bob);
     //   accessToken.setApprovalForAll(carol, true);
-      
-    //   // // 4. Someone buys it
+    //   
+    //   4. Someone buys it
     //   hoax(carol);
     //   assertEq(accessToken.ownerOf(1), bob);
     // //   accessToken.buy{value:0.01 ether}(1);

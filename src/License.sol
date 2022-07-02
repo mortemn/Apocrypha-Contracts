@@ -5,6 +5,8 @@ import {ERC721} from "solmate/tokens/ERC721.sol";
 import {MasterNFT} from "./MasterNFT.sol";
 import {Owned} from "solmate/auth/Owned.sol";
 import {Auth, Authority} from "solmate/auth/Auth.sol";
+import {AccessToken} from "./AccessToken.sol";
+
 
 
 contract License is ERC721, Auth {
@@ -25,6 +27,7 @@ contract License is ERC721, Auth {
     /// @notice Token id of the token which was last sold.
     uint256 public lastSold;
     MasterNFT masterNFT;
+    AccessToken public accessToken;
     
 
     /// @notice Struct of license data.
@@ -106,6 +109,59 @@ contract License is ERC721, Auth {
     //   masterNFT = _masterNFT;
     // } 
     
+    
+    event AccessTokenSet (AccessToken accessToken); 
+
+    function setAccessToken(AccessToken _accessToken) public {
+      accessToken = _accessToken;
+      emit AccessTokenSet(accessToken);
+    }
+
+    mapping(uint256 => uint256) licenseToAccessTokenBalance;
+    mapping(uint256 => bool) public licenseUsed;
+    
+    function mintAccessTokens (uint256 licenseId) public {
+      require(msg.sender == ownerOf(licenseId));
+      licenseUsed[licenseId] = true; 
+      accessToken.mint(licenseId);
+      licenseToAccessTokenBalance[licenseId] = accessToken.maxSupplyPerLicense;
+    }
+
+    function buyAccessToken (uint256 id) public {
+      
+      
+      accessToken.buy(id, msg.sender);
+      licenseToAccessTokenBalance[licenseId] -= 1;
+    }
+
+    function transferFrom(
+        address from,
+        address to,
+        uint256 licenseId
+    ) public override {
+        require(from == _ownerOf[licenseId], "WRONG_FROM");
+
+        require(to != address(0), "INVALID_RECIPIENT");
+
+        require(
+            msg.sender == from || isApprovedForAll[from][msg.sender] || msg.sender == getApproved[licenseId],
+            "NOT_AUTHORIZED"
+        );
+
+        // Underflow of the sender's balance is impossible because we check for
+        // ownership above and the recipient's balance can't realistically overflow.
+        unchecked {
+            _balanceOf[from]--;
+
+            _balanceOf[to]++;
+        }
+
+        _ownerOf[licenseId] = to;
+
+        delete getApproved[licenseId];
+      emit Transfer(from, to, licenseId);
+    }
+
     /// @notice Mints a specified amount of tokens if msg sender is a license holder. 
     /// @param amount Amount of tokens to be minted.
     function mint(uint256 amount) public requiresAuth {

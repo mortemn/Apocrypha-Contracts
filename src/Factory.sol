@@ -49,6 +49,10 @@ contract Factory is Auth {
       wholeAuthorityModule.setAccessToken(accessToken);
     }
 
+    function setAccessTokenOfLicense (License license, AccessToken accessToken) external {
+      license.setAccessToken(accessToken);
+    }
+
     function setWholeAuthorityModuleLicense (WholeAuthorityModule wholeAuthorityModule, License license) external {
       wholeAuthorityModule.setLicense(license);
     }

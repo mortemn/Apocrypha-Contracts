@@ -66,7 +66,7 @@ contract WholeAuthorityModule is Authority {
                   masterNFT.hasMasterNFT(user) && ( functionSig == bytes4(abi.encodeWithSignature("setMaxSupply(uint256)")) || 
                                                   functionSig == bytes4(abi.encodeWithSignature("setExpiryTime(uint256)")) ||
                                                   functionSig == bytes4(abi.encodeWithSignature("setPrice(uint256)")))
-                ) || (license.hasValidLicense(user) && functionSig == bytes4(abi.encodeWithSignature("mint(uint256)")))
+                ) || (user == address(license)) && functionSig == bytes4(abi.encodeWithSignature("mint(uint256)"))
             );
     } else {
         return ((user == masterNFT.ownerOf(1)) && (target == address(license)));
