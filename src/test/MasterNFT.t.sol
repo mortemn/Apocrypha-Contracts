@@ -105,7 +105,7 @@ contract MasterNFTTest is Test {
         
         assertEq(masterNFT.owner(), alice);     
         assertEq(masterNFT.ownerOf(1), alice);    
-        assertEq(license.ownerOf(1), alice);    // Alice as holder of masterNFT she can mint licenses 
+        assertEq(license.ownerOf(0), alice);    // Alice as holder of masterNFT she can mint licenses 
         
         
         hoax(alice);
@@ -120,10 +120,10 @@ contract MasterNFTTest is Test {
         hoax(bob);
         
         license.mint(1);        
-        assertEq(license.ownerOf(2), bob);        
+        assertEq(license.ownerOf(1), bob);        
         assertTrue(wholeAuthorityModule.canCall(bob, address(license), ""));  
         assertFalse(wholeAuthorityModule.canCall(alice, address(license), ""));  
-        // 
+        
         // console.log("Alice can call", wholeAuthorityModule.canCall(alice, address(license), ""));
         // console.log("alice has masterNFT:",wholeAuthorityModule.userHasMasterNFT(alice));
         
@@ -184,10 +184,10 @@ contract MasterNFTTest is Test {
         license.setExpiryTime(expiryTime);              // Setting the Expiry Time.
         
         license.mint(1);                                // Minting 3 tokens.
-        assertTrue(!license.isExpired(1));              // Not expired.
+        assertTrue(!license.isExpired(0));              // Not expired.
         cheats.warp(block.timestamp+expiryTime);        // Changing the time to time after the expirytime.       
         console.log(block.timestamp);                   // Time now is 10001.
-        assertTrue(license.isExpired(1));               // Expired.
+        assertTrue(license.isExpired(0));               // Expired.
     }
     
     function testSettingLicenseExpiryTimeAfterMint() public {
@@ -195,18 +195,18 @@ contract MasterNFTTest is Test {
         uint256 expiryTime = 2;  
         
         license.mint(1);
-        (uint256 expiryDate1,,) = license.getLicenseData(1); 
+        (uint256 expiryDate1,,) = license.getLicenseData(0); 
         console.log("expiry for token 1:",  expiryDate1);    // 864001 (10 days)
         
         license.setExpiryTime(expiryTime); 
         
-        (uint256 expiryDate2,,) = license.getLicenseData(1); 
+        (uint256 expiryDate2,,) = license.getLicenseData(0); 
         console.log("expiry for token 1:", expiryDate2);    // 864001 (10 days) 
         
         // Once you've minted a license, you cannot change the expiry date of that license by changing the global expiry time
 
         license.mint(1);
-        (uint256 expiryDate3,,) = license.getLicenseData(2);
+        (uint256 expiryDate3,,) = license.getLicenseData(1);
         console.log("expiry for token 2:", expiryDate3);    // 3
         assertEq(expiryDate3, block.timestamp + expiryTime);
 
@@ -246,12 +246,13 @@ contract MasterNFTTest is Test {
     
     function testNeedLicenseToCallAccessTokenFunctions() public {
         hoax(alice,0);
-        vm.expectRevert("UNAUTHORIZED");
-        accessToken.mint(1);
+        vm.expectRevert("NOT_MINTED");
+        license.mintAccessTokens(1);
     }
 
-    
-    function testCanSetLicensePrice () public {
+
+
+    function testSetLicensePrice () public {
         hoax(alice);
         license.mint(1);
         hoax(alice);
@@ -260,26 +261,12 @@ contract MasterNFTTest is Test {
         assertEq(license.price(), licensePrice);
         console.log(license.lastSold());
         hoax(bob, 100 ether);
-        license.buy{value:0.1 ether}(1);
-        assertEq(license.ownerOf(1), bob);
-        assertEq(bob.balance, (100-0.1)*10**18);
-     
-    }
-
-    function testSettingLicensePriceAfterMint () public {
-        hoax(alice);
-        license.mint(1);
-        hoax(alice);
-        license.setApprovalForAll(bob, true);
-
-        assertEq(license.price(), licensePrice);
-        console.log(license.lastSold());
-        hoax(bob, 100 ether);
-        license.buy{value:0.1 ether}(1);
-        assertEq(license.ownerOf(1), bob);
+        license.buy{value:0.1 ether}(0);
+        assertEq(license.ownerOf(0), bob);
         assertEq(bob.balance, (100-0.1)*10**18);
 
         // if alice mints and then sets price, the price will be updated
+
         hoax(alice);
         license.mint(1);
         hoax(alice);
@@ -290,14 +277,14 @@ contract MasterNFTTest is Test {
         assertEq(license.maxSupply(), 10);
         assertEq(license.totalSupply(), 2);
         vm.expectRevert("INCORRECT_PRICE");
-        license.buy{value:0.1 ether}(2);
+        license.buy{value:0.1 ether}(1);
         
         hoax(bob, 100 ether);
-        license.buy{value:7 ether}(2);
-        assertEq(license.ownerOf(2), bob);
+        license.buy{value:7 ether}(1);
+        assertEq(license.ownerOf(1), bob);
         assertEq(bob.balance, (100-7)*10**18);
 
-        // if alice sets price and then mints, the price will be updated as well
+        // // if alice sets price and then mints, the price will be updated as well
 
         hoax(alice);
         license.setPrice(8 ether);
@@ -312,8 +299,8 @@ contract MasterNFTTest is Test {
         license.buy{value:0.1 ether}(2);
         
         hoax(bob, 100 ether);
-        license.buy{value:8 ether}(3);
-        assertEq(license.ownerOf(3), bob);
+        license.buy{value:8 ether}(2);
+        assertEq(license.ownerOf(2), bob);
         assertEq(bob.balance, (100-8)*10**18);
     }
 
@@ -323,8 +310,8 @@ contract MasterNFTTest is Test {
         hoax(alice);
         license.setApprovalForAll(bob, true);
         hoax(bob, 100 ether);
-        license.buy{value:0.1 ether}(1);
-        assertEq(license.ownerOf(1), bob);
+        license.buy{value:0.1 ether}(0);
+        assertEq(license.ownerOf(0), bob);
         hoax(alice,0);
         masterNFT.withdraw();
         assertEq(alice.balance, 0.1 ether);
@@ -336,8 +323,8 @@ contract MasterNFTTest is Test {
         hoax(alice);
         license.setApprovalForAll(bob, true);
         hoax(bob, 100 ether);
-        license.buy{value:0.1 ether}(1);
-        assertEq(license.ownerOf(1), bob);
+        license.buy{value:0.1 ether}(0);
+        assertEq(license.ownerOf(0), bob);
         hoax(carol,1 ether);
         vm.expectRevert("UNAUTHORIZED");
         masterNFT.withdraw();

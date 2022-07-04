@@ -34,10 +34,31 @@ contract License is ERC721, Auth {
     /// @param expiryDate Date where license expires.
     /// @param minter Address of license holder who minted the token.
     struct LicenseData {
+      uint256   expiryDate;
+      address   minter;
+      uint256   accessTokenMaxSupply;
+      uint256[]  accessTokensHeld;
+    }
+
+    struct TokenData {
       uint256 expiryDate;
       address minter;
-      uint256 accessTokenMaxSupply;
+      uint256 licenseId;
     }
+
+    function getAccessToken(uint256 licenseId, uint256 index) view public returns (uint256 id) {
+      uint256[] memory accessTokensHeld = getLicenseData[licenseId].accessTokensHeld;
+      uint256 id = accessTokensHeld[index];
+      return id;
+    }
+
+    function getAmountLeft(uint256 licenseId) view public returns (uint256 amountLeft) {
+      uint256[] memory accessTokensHeld = getLicenseData[licenseId].accessTokensHeld;
+      amountLeft = accessTokensHeld.length;
+      return amountLeft;
+    }
+
+
 
     /// @notice Checks if token is sold or not. 
     mapping(uint256 => bool) public isSold;
@@ -56,8 +77,17 @@ contract License is ERC721, Auth {
     /// @param buyer address of the buyer of the token.
     event TokenSold(uint256 id, address buyer);
 
+
+    event AccessTokenSet (AccessToken accessToken); 
+
     /// @notice Maps id to struct that holds info of it.
     mapping(uint256 => LicenseData) public getLicenseData;
+
+    mapping(uint256 => uint256) public licenseToAccessTokenBalance;
+    mapping(uint256 => bool) public licenseUsed;
+    mapping(uint256 => TokenData) public getTokenData;
+
+
     constructor(
         string memory _name,
         string memory _symbol,
@@ -83,57 +113,129 @@ contract License is ERC721, Auth {
       price = _price;
       masterNFT = _masterNFT;
     } 
-    // constructor(
-    //     string memory _name,
-    //     string memory _symbol,
-    //     string memory _baseURI,
-    //     uint256 _expiryTime,
-    //     uint256 _maxSupply,
-    //     uint256 _price,
-    //     address _owner,
-    //     Authority _authority,
-    //     MasterNFT _masterNFT
-    // ) ERC721(
-    //   // e.g. GEB Access
-    //   string(abi.encodePacked(_name, " License")),
-    //   // at stands for access token
-    //   string(abi.encodePacked("l", _symbol))
-    // ) Auth(_owner, _authority) {
-    
-    //   baseURI = _baseURI;
-    //   lastSold = 1;
-    //   totalSupply = 0;
-    //   expiryTime = _expiryTime;
-    //   maxSupply = _maxSupply;
-    //   price = _price;
-    //   masterNFT = _masterNFT;
-    // } 
     
     
-    event AccessTokenSet (AccessToken accessToken); 
+    
+    
 
     function setAccessToken(AccessToken _accessToken) public {
+      require(msg.sender == owner);
       accessToken = _accessToken;
       emit AccessTokenSet(accessToken);
     }
-
-    mapping(uint256 => uint256) licenseToAccessTokenBalance;
-    mapping(uint256 => bool) public licenseUsed;
     
     function mintAccessTokens (uint256 licenseId) public {
-      require(msg.sender == ownerOf(licenseId));
+      require(msg.sender == ownerOf(licenseId), "NOT_OWNER_OF_LICENSEID");
+      require(licenseUsed[licenseId] != true, "LICENSE_ALREADY_USED");
+  
+      uint256[] memory accessTokensHeld = new uint256[](accessToken.maxSupplyPerLicense());
+      // uint256[] storage accessTokensHeld;
+
+      unchecked {
+          uint256 accessTokensToBeMinted = accessToken.maxSupplyPerLicense();
+          for (uint256 i = 0; i < accessTokensToBeMinted; i++ ) {
+              
+              // uint256 id = accessToken.mint(address(this));
+              uint256 id = accessToken.mint(licenseId, address(this));
+              
+              // accessToken.mint(id, msg.sender);
+              // Sets expiry date and address of minter.
+              // getTokenData[id].expiryDate = block.timestamp + accessToken.expiryTime();
+              // getTokenData[id].minter = msg.sender;
+              // getTokenData[id].licenseId = licenseId; 
+              // accessTokensHeld.push(id);
+              accessTokensHeld[i] = id;
+          }
+      }
+      getLicenseData[licenseId].accessTokensHeld = accessTokensHeld;
+      licenseToAccessTokenBalance[licenseId] = accessToken.maxSupplyPerLicense();
       licenseUsed[licenseId] = true; 
-      accessToken.mint(licenseId);
-      licenseToAccessTokenBalance[licenseId] = accessToken.maxSupplyPerLicense;
     }
 
-    function buyAccessToken (uint256 id) public {
+    function buyAccessToken(uint256 licenseId) payable public {
       
-      
-      accessToken.buy(id, msg.sender);
-      licenseToAccessTokenBalance[licenseId] -= 1;
-    }
+      uint256[] storage accessTokensHeld = getLicenseData[licenseId].accessTokensHeld;
+      uint256 id = accessTokensHeld[accessTokensHeld.length-1];
+      // uint256 id = accessTokensHeld[accessTokensHeld.length-2];
+      // uint256 id = 100;
+      // uint256 id = accessTokensHeld[0]; 
+      accessToken.buy{value: msg.value}(id, msg.sender);
+      accessTokensHeld.pop();
+      getLicenseData[licenseId].accessTokensHeld = accessTokensHeld;
+      withdrawableBalance[licenseId] += msg.value/2;
 
+    }
+    mapping (uint256 => uint256) public withdrawableBalance;
+
+     // Function to receive Ether. msg.data must be empty
+    receive() external payable {}
+
+    // Fallback function is called when msg.data is not empty
+    fallback() external payable {}
+
+    // Function to withdraw all Ether from this contract.
+    function withdraw(uint256 licenseId) public {
+        require(msg.sender == ownerOf(licenseId), "NOT_OWNER_OF_LICENSE");
+        // get the amount of Ether stored in this contract
+        uint amount = withdrawableBalance[licenseId];
+
+        // send all Ether to owner
+        // Owner can receive Ether since the address of owner is payable
+        (bool success, ) = ownerOf(licenseId).call{value: amount}("");
+        require(success, "Failed to send Ether");
+        withdrawableBalance[licenseId] = 0;
+    }
+    
+
+    /// @notice Mints a specified amount of licenses if msg sender is a masterNFT holder. 
+    /// @param amount Amount of Licenses to be minted.
+    function mint(uint256 amount) public requiresAuth {
+      require(totalSupply + amount <= maxSupply, "MAX_SUPPLY_REACHED");
+
+      // Won't overflow (New total supply is less than max supply)
+      unchecked {
+          for (uint256 i = 0; i < amount; i++) {
+              uint256 id = totalSupply;
+              _mint(msg.sender, id);
+              address minter = masterNFT.ownerOf(1);
+              // Sets expiry date and address of minter.
+              getLicenseData[id].expiryDate = block.timestamp + expiryTime;
+              getLicenseData[id].minter = msg.sender;
+              getLicenseData[id].accessTokenMaxSupply;
+              
+              totalSupply++;
+          }
+      }
+    }
+    
+    /// @notice Buys a specified token Id.
+    function buy(uint256 licenseId) external payable {
+      require(lastSold <= totalSupply, "MAX_SUPPLY_REACHED");
+      require(msg.value == price, "INCORRECT_PRICE");
+      require(isSold[licenseId] == false, "ALREADY_SOLD");
+      
+      // allocate half the funds to contract owner and other half to license holder who minted the token.
+      // funds are sent to the MasterNFT contract directly, allowing the MasterNFT holder to accumulate and withdraw at his pleasure.
+      (bool sent, bytes memory data) = payable(address(masterNFT)).call{value:msg.value}("");
+      require(sent, "Failed to send Ether!");
+      // transferFrom(getLicenseData[id].minter, msg.sender, id);
+      transferFrom(ownerOf(licenseId), msg.sender, licenseId);
+      emit TokenSold(lastSold, msg.sender);
+      
+      uint256[] memory accessTokensHeld = getLicenseData[licenseId].accessTokensHeld;
+
+        
+      
+      // unchecked {
+      //   for (uint256 i = 0; i < accessTokensHeld.length; i++) {
+      //   // for (uint256 i = 0; i < licenseToAccessTokenBalance[licenseId]; i++) {
+      //     accessToken.transferFrom(address(this), msg.sender, getLicenseData[licenseId].accessTokensHeld[i]);
+      //     }
+      //   }
+      
+      lastSold++;
+    }
+    
     function transferFrom(
         address from,
         address to,
@@ -159,57 +261,17 @@ contract License is ERC721, Auth {
         _ownerOf[licenseId] = to;
 
         delete getApproved[licenseId];
-      emit Transfer(from, to, licenseId);
+        
+        // uint256[] memory accessTokensHeld = getLicenseData[licenseId].accessTokensHeld;
+// 
+        // 
+        // for (uint256 i = 0; i < accessTokensHeld.length; i++) {
+          // accessToken.transferFrom(address(this), msg.sender, getLicenseData[licenseId].accessTokensHeld[i]);
+          // }
+        // licenseToAccessTokenBalance[licenseId] = 0;
+        emit Transfer(from, to, licenseId);
     }
 
-    /// @notice Mints a specified amount of tokens if msg sender is a license holder. 
-    /// @param amount Amount of tokens to be minted.
-    function mint(uint256 amount) public requiresAuth {
-      require(totalSupply + amount <= maxSupply, "MAX_SUPPLY_REACHED");
-
-      // Won't overflow (New total supply is less than max supply)
-      unchecked {
-          for (uint256 i = 0; i < amount; i++) {
-              uint256 id = totalSupply + 1;
-              _mint(msg.sender, id);
-              address minter = masterNFT.ownerOf(1);
-              // Sets expiry date and address of minter.
-              getLicenseData[id].expiryDate = block.timestamp + expiryTime;
-              getLicenseData[id].minter = msg.sender;
-              
-              totalSupply++;
-          }
-      }
-    }
-
-    /// @notice Emitted after a new max supply for a license's access tokens is set.
-    /// @param id - id of the license
-    /// @param newAccessTokenMaxSupply the new max supply for access tokens
-
-    event accessTokenMaxSupplyForLicenseChanged(uint256 id, uint256 newAccessTokenMaxSupply);
-
-    function setAccessTokenMaxSupplyForLicense(uint256 id, uint256 newAccessTokenMaxSupply) public requiresAuth {
-      require(isSold[id] == false, "ALREADY_SOLD");
-      getLicenseData[id].accessTokenMaxSupply = newAccessTokenMaxSupply;
-      emit accessTokenMaxSupplyForLicenseChanged(id, newAccessTokenMaxSupply);
-    }
-
-    /// @notice Buys a specified token Id.
-    function buy(uint256 id) external payable {
-      require(lastSold <= totalSupply, "MAX_SUPPLY_REACHED");
-      require(msg.value == price, "INCORRECT_PRICE");
-      require(isSold[id] == false, "ALREADY_SOLD");
-      
-      // allocate half the funds to contract owner and other half to license holder who minted the token.
-      // funds are sent to the MasterNFT contract directly, allowing the MasterNFT holder to accumulate and withdraw at his pleasure.
-      (bool sent, bytes memory data) = payable(address(masterNFT)).call{value:msg.value}("");
-      require(sent, "Failed to send Ether!");
-      // transferFrom(getLicenseData[id].minter, msg.sender, id);
-      transferFrom(ownerOf(id), msg.sender, id);
-      emit TokenSold(lastSold, msg.sender);
-      
-      lastSold++;
-    }
 
     /// @notice Checks if user has any valid licenses, returns true if they have.
     /// @param user Address of user that is checked.
@@ -218,13 +280,13 @@ contract License is ERC721, Auth {
       view
       returns (bool)
     {
-      // if (balanceOf[user] == 0) {
+      
       if (balanceOf(user) == 0) {
         return false;
       }
 
       unchecked {
-        for (uint256 i = 1; i <= totalSupply; i++) {
+        for (uint256 i = 0; i < totalSupply; i++) {
           // if (ownerOf[i] == user && !isExpired(i)) {
           if (ownerOf(i) == user && !isExpired(i)) {
             return(true);

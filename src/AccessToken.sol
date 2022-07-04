@@ -90,26 +90,34 @@ contract AccessToken is ERC721, Auth {
     } 
         
     /// @notice Mints a specified amount of tokens if msg sender is a license holder. 
-    /// @param licenseId - the license ID that's minting this from
+    /// @param id - the id of the accessToken minted.
+    /// @param to - the user that the accessToken is minte
     
-    function mint(uint256 licenseId) public requiresAuth {
+    // function mint(address to) external requiresAuth returns (uint256 id) {
+    //   // require(totalSupply + amount <= maxSupply, "MAX_SUPPLY_REACHED");
+    //   // require(license.ownerOf(licenseId)== msg.sender, "NOT_OWNER_OF_LICENSE");
+                
+    //   uint256 id = totalSupply ;
+    //   // uint256 id = totalSupply + 1;
+    //   _mint(msg.sender, id);
+    //   totalSupply++;    
+    //   return (id);
+
+    // }
+    function mint(uint256 licenseId, address to) external returns (uint256 id) {
+      // require(msg.sender==address(license));
+      // require(msg.sender==address(license));
       // require(totalSupply + amount <= maxSupply, "MAX_SUPPLY_REACHED");
       // require(license.ownerOf(licenseId)== msg.sender, "NOT_OWNER_OF_LICENSE");
-      
-      // Won't overflow (New total supply is less than max supply)
-      unchecked {
-          for (uint256 i = 0; i < maxSupplyPerLicense; i++) {
-              uint256 id = totalSupply + 1;
-              _mint(msg.sender, id);
-              // Sets expiry date and address of minter.
-              getTokenData[id].expiryDate = block.timestamp + expiryTime;
-              getTokenData[id].minter = msg.sender;
-              getTokenData[id].licenseId = licenseId;
+                
+      uint256 id = totalSupply ;
+      // uint256 id = totalSupply + 1;
+      _mint(msg.sender, id);
+      totalSupply++;    
+      return (id);
 
-              totalSupply++;              
-          }
-      }
     }
+    
     mapping(uint256 => uint256) private licenseHolderBalance; 
     /// @notice Buys a specified token Id.
     /// @param id Token Id of token that buyer wants to buy
@@ -126,12 +134,11 @@ contract AccessToken is ERC721, Auth {
       
       isSold[id] = true;
 
-      // allocate half the funds to contract owner and other half to license holder who minted the token.
-      (bool masterNFTHolderPaid, bytes memory masterNFTPaymentData) = payable(address(masterNFT)).call{value: split}("");
-      // (bool licenseHolderPaid, bytes memory licenseHolderPaymentData) = payable(license.ownerOf(licenseId)).call{value: split}("");
-      (bool licenseHolderPaid, bytes memory licenseHolderPaymentData) = payable(address(this)).call{value: split}("");
       
-      licenseHolderBalance[licenseId] += split;
+      (bool masterNFTHolderPaid, bytes memory masterNFTPaymentData) = payable(address(masterNFT)).call{value: split}("");      
+      (bool licenseHolderPaid, bytes memory licenseHolderPaymentData) = payable(address(license)).call{value: split}("");
+      
+      
 
       require(masterNFTHolderPaid, "Failed to send to MasterNFT!");
       require(licenseHolderPaid, "Failed to send to license holder!");
@@ -142,6 +149,17 @@ contract AccessToken is ERC721, Auth {
 
       emit TokenSold(id, msg.sender);
     }
+
+    function withdraw(uint256 licenseId) public {
+        require(msg.sender == license.ownerOf(licenseId));
+        uint amount = licenseHolderBalance[licenseId];
+
+        // send all Ether to owner
+        // Owner can receive Ether since the address of owner is payable
+        (bool success, ) = payable(license.ownerOf(licenseId)).call{value: amount}("");
+        require(success, "Failed to send Ether");
+    }
+
 
     // Function to receive Ether. msg.data must be empty
     receive() external payable {}

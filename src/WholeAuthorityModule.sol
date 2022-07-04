@@ -60,16 +60,22 @@ contract WholeAuthorityModule is Authority {
     address target,
     bytes4 functionSig
   ) external view returns (bool) {
+
+    
     if (target == address(accessToken)) {
         return (
                 (
                   masterNFT.hasMasterNFT(user) && ( functionSig == bytes4(abi.encodeWithSignature("setMaxSupply(uint256)")) || 
                                                   functionSig == bytes4(abi.encodeWithSignature("setExpiryTime(uint256)")) ||
                                                   functionSig == bytes4(abi.encodeWithSignature("setPrice(uint256)")))
-                ) || (user == address(license)) && functionSig == bytes4(abi.encodeWithSignature("mint(uint256)"))
-            );
+                ) 
+                || (user == address(license) && functionSig == bytes4(abi.encodeWithSignature("mint(uint256, address)"))) 
+                || (user == address(license) && functionSig == bytes4(abi.encodeWithSignature("buy(uint256, address)")))
+        );
     } else {
         return ((user == masterNFT.ownerOf(1)) && (target == address(license)));
     }
+
+     
   }
 }
