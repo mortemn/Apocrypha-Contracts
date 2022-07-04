@@ -3,13 +3,14 @@ pragma solidity 0.8.11;
 
 import {ERC721} from "solmate/tokens/ERC721.sol";
 import {Auth, Authority} from "solmate/auth/Auth.sol";
-
+import {License} from "./License.sol";
 import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
+import{MasterNFT} from "./MasterNFT.sol";
 
 contract AccessToken is ERC721, Auth {
     using FixedPointMathLib for uint256;
-
-
+    MasterNFT masterNFT;
+    License public license;
     /*//////////////////////////////////////////////////////////////
                               CONFIGURATION
     //////////////////////////////////////////////////////////////*/
@@ -17,8 +18,8 @@ contract AccessToken is ERC721, Auth {
     string public baseURI;
     /// @notice Amount of time before token expires.
     uint256 public expiryTime;
-    /// @notice Max supply of token.
-    uint256 public maxSupply;
+    /// @notice Max supply of tokens mintable per license.
+    uint256 public maxSupplyPerLicense;
     /// @notice Price of token.
     uint256 public price;
     /// @notice Total supply of token.
@@ -30,6 +31,9 @@ contract AccessToken is ERC721, Auth {
     struct TokenData {
       uint256 expiryDate;
       address minter;
+      uint256 licenseId;
+      // uint256 licenseId;
+      // address payTo = license.Owner(licenseId
     }
 
     /// @notice Checks if token is sold or not. 
@@ -62,89 +66,130 @@ contract AccessToken is ERC721, Auth {
         string memory _symbol,
         string memory _baseURI,
         uint256 _expiryTime,
-        uint256 _maxSupply,
+        uint256 _maxSupplyPerLicense,
         uint256 _price,
-        Authority _authority
+        address _owner,
+        Authority _authority,
+        License _license,
+        MasterNFT _masterNFT
+    
     ) ERC721(
       // e.g. GEB Access
       string(abi.encodePacked(_name, " Access")),
       // at stands for access token.
       string(abi.encodePacked("at", _symbol))
     )
-    Auth(Auth(msg.sender).owner(), _authority) {
+    Auth(_owner, _authority) {
       baseURI = _baseURI;
       totalSupply = 0;
       expiryTime = _expiryTime;
-      maxSupply = _maxSupply;
+      maxSupplyPerLicense = _maxSupplyPerLicense;
       price = _price;
+      license = _license;
+      masterNFT = _masterNFT;
     } 
-
+        
     /// @notice Mints a specified amount of tokens if msg sender is a license holder. 
-    /// @param amount Amount of tokens to be minted.
-    function mint(uint256 amount) external requiresAuth {
-      require(totalSupply + amount <= maxSupply, "MAX_SUPPLY_REACHED");
+    /// @param id - the id of the accessToken minted.
+    /// @param to - the user that the accessToken is minte
+    
+    // function mint(address to) external requiresAuth returns (uint256 id) {
+    //   // require(totalSupply + amount <= maxSupply, "MAX_SUPPLY_REACHED");
+    //   // require(license.ownerOf(licenseId)== msg.sender, "NOT_OWNER_OF_LICENSE");
+                
+    //   uint256 id = totalSupply ;
+    //   // uint256 id = totalSupply + 1;
+    //   _mint(msg.sender, id);
+    //   totalSupply++;    
+    //   return (id);
 
-      // Won't overflow (New total supply is less than max supply)
-      unchecked {
-          for (uint256 i = 0; i < amount; i++) {
-              uint256 id = totalSupply + 1;
-              _mint(msg.sender, id);
+    // }
+    function mint(uint256 licenseId, address to) external returns (uint256 id) {
+      // require(msg.sender==address(license));
+      // require(msg.sender==address(license));
+      // require(totalSupply + amount <= maxSupply, "MAX_SUPPLY_REACHED");
+      // require(license.ownerOf(licenseId)== msg.sender, "NOT_OWNER_OF_LICENSE");
+                
+      uint256 id = totalSupply ;
+      // uint256 id = totalSupply + 1;
+      _mint(msg.sender, id);
+      totalSupply++;    
+      return (id);
 
-              // Sets expiry date and address of minter.
-              getTokenData[id].expiryDate = block.timestamp + expiryTime;
-              getTokenData[id].minter = msg.sender;
-
-              totalSupply++;
-          }
-      }
     }
-
+    
+    mapping(uint256 => uint256) private licenseHolderBalance; 
     /// @notice Buys a specified token Id.
     /// @param id Token Id of token that buyer wants to buy
-    function buy(uint256 id) external payable {
+    function buy(uint256 id, address user) external payable {
+      
       require(id < totalSupply, "DOES_NOT_EXIST");
       require(msg.value == price, "INCORRECT_PRICE");
       require(isSold[id] == false, "ALREADY_SOLD");
+      
+      uint256 licenseId = getTokenData[id].licenseId;
+   
 
       uint256 split = msg.value.mulDivDown(5, 10);
       
       isSold[id] = true;
 
-      // allocate half the funds to contract owner and other half to license holder who minted the token.
-      payable(owner).transfer(split);
-      payable(getTokenData[id].minter).transfer(split);
+      
+      (bool masterNFTHolderPaid, bytes memory masterNFTPaymentData) = payable(address(masterNFT)).call{value: split}("");      
+      (bool licenseHolderPaid, bytes memory licenseHolderPaymentData) = payable(address(license)).call{value: split}("");
+      
+      
+
+      require(masterNFTHolderPaid, "Failed to send to MasterNFT!");
+      require(licenseHolderPaid, "Failed to send to license holder!");
 
       // Transfer token from license holder to buyer.
-      transferFrom(getTokenData[id].minter, msg.sender, id);
+      // transferFrom(ownerOf(id), msg.sender, id);
+      transferFrom(msg.sender, user, id);
 
       emit TokenSold(id, msg.sender);
     }
-    
+
+    function withdraw(uint256 licenseId) public {
+        require(msg.sender == license.ownerOf(licenseId));
+        uint amount = licenseHolderBalance[licenseId];
+
+        // send all Ether to owner
+        // Owner can receive Ether since the address of owner is payable
+        (bool success, ) = payable(license.ownerOf(licenseId)).call{value: amount}("");
+        require(success, "Failed to send Ether");
+    }
+
+
+    // Function to receive Ether. msg.data must be empty
+    receive() external payable {}
+
+    // Fallback function is called when msg.data is not empty
+    fallback() external payable {}
 
     /// @notice Sets a new token expiry time.
     /// @param time New expiry time. 
-    function setExpiryTime(uint256 time) external {
-      require(msg.sender == owner, "NOT_OWNER");
+    function setExpiryTime(uint256 time) requiresAuth public {
       expiryTime = time;
 
       emit ExpiryTimeUpdated(time);
     }
-
+    
     /// @notice Sets a new max supply.
     /// @param supply New max supply.
-    function setMaxSupply(uint256 supply) external {
-      require(msg.sender == owner, "NOT_OWNER");
+    function setMaxSupply(uint256 supply) public requiresAuth {
+      
       // New max supply has to be higher than current supply.
       require(totalSupply < supply, "SUPPLY_ALREADY_REACHED");
-      maxSupply = supply;
+      maxSupplyPerLicense = supply;
 
       emit MaxSupplyUpdated(supply);
     }
 
     /// @notice Sets a new token price.
     /// @param newPrice New price.
-    function setPrice(uint256 newPrice) external {
-      require(msg.sender == owner, "NOT_OWNER");
+    function setPrice(uint256 newPrice) public requiresAuth {
+      
       price = newPrice;
 
       emit PriceUpdated(newPrice);
