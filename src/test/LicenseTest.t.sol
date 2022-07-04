@@ -10,10 +10,12 @@ import {DSTestPlus} from "solmate/test/utils/DSTestPlus.sol";
 
 import {Auth} from "solmate/auth/Auth.sol";
 import {AccessToken} from "../AccessToken.sol";
-import {AuthorityModule} from "../AuthorityModule.sol";
+
 import {License} from "../License.sol";
 import {Factory} from "../Factory.sol";
 import {Authority} from "solmate/auth/Auth.sol";
+import {MasterNFT} from "../MasterNFT.sol";
+import {WholeAuthorityModule} from "../WholeAuthorityModule.sol";
 
 
 interface CheatCodes {
@@ -24,9 +26,10 @@ interface CheatCodes {
 
 contract LicenseTest is Test {
     AccessToken accessToken;
-    AuthorityModule authorityModule;
     License license;
     Factory factory;
+    MasterNFT masterNFT;
+    WholeAuthorityModule wholeAuthorityModule;
 
     CheatCodes cheats = CheatCodes(HEVM_ADDRESS);
 
@@ -36,164 +39,254 @@ contract LicenseTest is Test {
     address bob = cheats.addr(2);
     address carol = cheats.addr(3);
 
-    string licenseName = "GEB";
-    string licenseSymbol = "GEB"; 
-    string licenseBaseURI = "geb.com";
+    string name = "GEB";
+    string symbol = "GEB"; 
+    string baseURI = "geb.com";
+    
     uint256 licenseExpiryTime =  10 days;
     uint256 licenseMaxSupply = 10; 
     uint256 licensePrice = 0.1 ether;
 
-
-    string accessTokenName = "GEB"; 
-    string accessTokenSymbol = "GEB";
-    string accessTokenBaseURI = "geb.com";
     uint256 accessTokenExpiryTime = 100 days ;
     uint256 accessTokenMaxSupply = 100;
     uint256 accessTokenPrice =  0.01 ether;
-    
 
     function setUp() public {
-      factory = new Factory(address(this), Authority(address(0)));
+        factory = new Factory(address(this), Authority(address(0)));
+        hoax(alice);
+        masterNFT = new MasterNFT(name, symbol, baseURI); 
+        wholeAuthorityModule = factory.deployWholeAuthorityModule(masterNFT);
+        license = factory.deployLicense(name, symbol, baseURI, licenseExpiryTime, licenseMaxSupply, licensePrice, wholeAuthorityModule, masterNFT);
+        accessToken = factory.deployAccessToken(name, symbol, baseURI, accessTokenExpiryTime, accessTokenMaxSupply, accessTokenPrice, wholeAuthorityModule, license, masterNFT);
+        factory.setWholeAuthorityModuleLicense(wholeAuthorityModule, license);
+        factory.setWholeAuthorityModuleAccessToken(wholeAuthorityModule, accessToken);
+        factory.setAccessTokenOfLicense(license, accessToken);
+        hoax(alice);
+        masterNFT.mint(alice);
+        hoax(alice);
+        license.mint(1);
+        
+    }
+
+    function testTransferLicense() public {
+        assertEq(license.ownerOf(0), alice);    // Alice as holder of masterNFT she can mint licenses 
+        hoax(alice);
+        license.safeTransferFrom(alice, bob, 0);
+        assertEq(license.ownerOf(0), bob);        // ownership of the Master NFT is changed when the Master NFT is changed hands.
+        assertEq(license.owner(), address(factory));
+    }
+
+    function testMintAccessToken() public {
+      hoax(alice);                                  
+      license.mintAccessTokens(0);                              // Alice has already been given a license in the setUp
+      assertEq(license.licenseToAccessTokenBalance(0), 100);    // 100 is the max supply of accesstokens each license can mint 
+      assertEq(accessToken.balanceOf(address(license)), 100);
+    
       hoax(alice);
-      license = factory.deployLicense(licenseName, licenseSymbol, licenseBaseURI, licenseExpiryTime, licenseMaxSupply, licensePrice);
-      authorityModule = factory.deployAuthorityModule(license);
-      accessToken = factory.deployAccessToken(accessTokenName, accessTokenSymbol, accessTokenBaseURI, accessTokenExpiryTime, accessTokenMaxSupply, accessTokenPrice, authorityModule);
-      authorityModule.setAccessTokenAddress(address(accessToken));
-    }
-
-    function testAuthorCanMintLicense() public {
-        // alice is the author
-        // She ownes the license contract 
-        assertEq(license.owner(), alice);
-        // she can mint licenses 
-        startHoax(alice);
-        license.mint(1);
-        assertEq(license.ownerOf(1), alice);    
-        license.mint(1);
-        assertEq(license.ownerOf(2), alice);    
-
-    }
-
-    function testAuthorCanSetExpiryTime() public {
-        
-        startHoax(alice);                               // Calling License contract as Author Alice.
-        console.log(block.timestamp);                   // The time now is 1.
-        uint256 expiryTime = licenseExpiryTime;                     
-        license.setExpiryTime(expiryTime);              // Setting the Expiry Time.
-        license.mint(1);                                // Minting 3 tokens.
-        assertTrue(!license.isExpired(1));              // Not expired.
-        cheats.warp(block.timestamp+expiryTime);        // Changing the time to time after the expirytime.       
-        console.log(block.timestamp);                   // Time now is 10001.
-        assertTrue(license.isExpired(1));               // Expired.
+      license.mint(1);                             // We now mint a license.
+      hoax(alice);
+      license.safeTransferFrom(alice, bob, 1);     // Which we then send to Bob.
+      assertEq(license.ownerOf(1), bob);
+      hoax(bob);
+      license.mintAccessTokens(1);
+      assertEq(license.licenseToAccessTokenBalance(1), 100);   // 100 is the max supply of accesstokens each license can mint 
     }
 
 
-    function testAuthorCanSetMaxSupply() public {
-
-    }
-
-    function testAuthorCanSetPrice() public {
-        
-    }
-
-    function testExpiredLicenseHoldersCannotCallAccessTokenFunctions() public {
-        
-        
-        console.log("time is right now:", block.timestamp);                   // The time now is 1.
-        uint256 expiryTime = licenseExpiryTime;                     
+    function testTransferLicenseAfterMintingAccessToken() public {
+       
+        hoax(alice);                                  
+        license.mintAccessTokens(0);                              // Alice has already been given a license in the setUp
+        assertEq(license.licenseToAccessTokenBalance(0), 100);    // 100 is the max supply of accesstokens each license can mint 
+        assertEq(accessToken.balanceOf(address(license)), 100);            
         hoax(alice);
-        // license.setExpiryTime(expiryTime);                              
-        console.log("expiryDate:",license.getExpiryDate(1));          // returns 0 because token not minted yet 
+        license.transferFrom(alice, bob, 0);
+        assertEq(license.ownerOf(0), bob);        // ownership of the Master NFT is changed when the Master NFT is changed hands.
+        assertEq(license.owner(), address(factory));
+        assertEq(accessToken.balanceOf(address(license)), 100);
+
+    }
+
+    function testBuyAccessTokenFromLicense() public {
         hoax(alice);
-        license.mint(1);
-        uint256 expirydate = license.getExpiryDate(1);
-        console.log("expiryDate:",expirydate);
-        hoax(alice);
-        license.safeTransferFrom(alice, bob, 1);
-        assertTrue(license.hasValidLicense(bob));
-        assertEq(license.getExpiryDate(1), expiryTime + block.timestamp);
+        license.mintAccessTokens(0);
+        assertEq(license.licenseToAccessTokenBalance(0), 100);    // 100 is the max supply of accesstokens each license can mint 
+        assertEq(accessToken.balanceOf(address(license)), 100);
+        assertEq(accessToken.ownerOf(1), address(license));
+        assertEq(accessToken.ownerOf(12), address(license));
+        assertEq(accessToken.ownerOf(99), address(license));
+        
+        hoax(alice, 0);
+        
+        console.log(0, license.getAccessToken(0,0));
+        console.log(1, license.getAccessToken(0,1));
+        console.log(2, license.getAccessToken(0,2));
+        console.log(20, license.getAccessToken(0,20));
+        console.log(99, license.getAccessToken(0,99));
+        
+        console.log("the no. of accessTokens left:", license.getAmountLeft(1));
+
         hoax(bob);
-        accessToken.mint(1);
-        cheats.warp(block.timestamp + expiryTime);
-        hoax(bob);
-        vm.expectRevert(abi.encodePacked("UNAUTHORIZED"));
-        accessToken.mint(1);
-    }
+            
+        license.buyAccessToken{value: 0.01 ether}(0);
+    
+        console.log("the no. of accessTokens left:", license.getAmountLeft(1));
+            
+        console.log(0, license.getAccessToken(0,0));
+        console.log(1, license.getAccessToken(0,1));
+        console.log(2, license.getAccessToken(0,2));
+        console.log(20, license.getAccessToken(0,20));
+        console.log(98, license.getAccessToken(0,98));
 
-
-    function testSettingExpiryTimeAfterMint() public {
-        uint256 expiryTime = 2;   
-        startHoax(alice);
-        
-        license.mint(1);
-        console.log("expiry for token 1:", license.getExpiryDate(1));    // 8640000001 (10000 days)
-        license.setExpiryTime(expiryTime); 
-        console.log("expiry for token 1:", license.getExpiryDate(1));    // 8640000001 (10000 days) 
-        
-        // Once you've minted a license, you cannot change the expiry date of that license by changing the global expiry time
-
-        license.mint(1);
-        
-        console.log("expiry for token 2:", license.getExpiryDate(2));    // 3 
-
-    }
-
-
-    function testCallingAccessTokenAsAuthor() public {
-        
-        assertEq(license.owner(), alice);
-        hoax(alice);                
-        accessToken.mint(1);
-        
-    }
-
-    function testLicenseOwnersCanCallAccessToken() public {
-        
-        // alice is the author
-        // She ownes the license contract 
-        // she can mint licenses 
-        hoax(alice);
-        license.mint(2);
-        hoax(alice);
-        license.safeTransferFrom(alice, bob, 1);
-        hoax(bob);
-        console.log("bob's address:", bob);
-
-        console.log("bob has validLicense:", license.hasValidLicense(bob));
-        assertTrue(license.hasValidLicense(bob));
-
+        assertEq(address(masterNFT).balance, 0.01 ether/2);
+        assertEq(license.withdrawableBalance(0), 0.01 ether/2);
+        // 
         console.log(address(license));
-        console.log(address(authorityModule.getLicense()));
-        console.log("bob has validLicense:", authorityModule.userHasLicense(bob));
-        accessToken.mint(1); 
+        console.log(accessToken.ownerOf(99));
+        assertEq(address(masterNFT).balance, 0.01 ether/2);
+        hoax(alice);
+        license.withdraw(0);
+        assertEq(license.withdrawableBalance(0),0);
     }
 
     
-
-    function testBuyLicense() public {
-        hoax(alice, 0);
-        license.mint(3);
-        
-        
-        hoax(bob, 1000000 ether);
-        console.log("bob's balance is:", bob.balance);
-        console.log("balance of this contract:", address(this).balance);
-        console.log("balance of alice:", alice.balance);
-        license.buy{value:0.1 ether}();
-        // assertTrue(bob.balance)
-        console.log("balance of alice:", alice.balance);
-        console.log("balance of this contract:", address(this).balance);
-    }
-
-
-    function testChangeLicensePrice() public {
-        
-        console.log("before price change:", license.price());
+    function testSetAccessTokenMaxSupply() public {
         hoax(alice);
-        license.setPrice(3.14 ether);
-        console.log("after price change:", license.price());
+        license.mintAccessTokens(0);
+        assertEq(accessToken.balanceOf(address(license)), 100);
+        
+        hoax(alice);
+        masterNFT.safeTransferFrom(alice, bob, 1);  // Bob now holds the masterNFT.
+        assertEq(masterNFT.owner(), bob);           // ownership of the contract is changed when the Master NFT is changed hands.
+        assertEq(masterNFT.ownerOf(1), bob);        // ownership of the Master NFT is changed when the Master NFT is changed hands.
+        
+        
+        hoax(bob);    
+        license.mint(1);                              // Bob mints 1 license to himself.
+        
+        assertEq(license.ownerOf(0), alice);
+        assertEq(license.ownerOf(1), bob);
+        
+        
+        console.log(wholeAuthorityModule.masterNFT().ownerOf(1));
+        console.log(bob);
+        hoax(bob);
+        accessToken.setMaxSupply(1000);                   // Bob sets the max supply of access tokens each license can mint.
+        console.log(accessToken.maxSupplyPerLicense());
+        assertEq(accessToken.maxSupplyPerLicense(), 1000);
+        hoax(bob);
+
+        license.mintAccessTokens(1);
+        assertEq(accessToken.balanceOf(address(license)), 1000+100);
+        
+        hoax(bob);
+        vm.expectRevert("LICENSE_ALREADY_USED");
+        license.mintAccessTokens(1);
+
+        hoax(alice);
+        vm.expectRevert("UNAUTHORIZED");
+        accessToken.setMaxSupply(10000);
     }
 
+    function testLicensesCannotBeUsedTwice() public {
+      assertEq(license.ownerOf(0), alice);
+      hoax(alice);
+      console.log(address(license));
+      license.mintAccessTokens(0);
+      
+      
+      assertEq(accessToken.balanceOf(address(license)), 100);
+      assertEq(license.getAmountLeft(0), 100);
+    //   
+      hoax(alice);
+      license.safeTransferFrom(alice, bob, 0);
+      hoax(bob);
+      vm.expectRevert("LICENSE_ALREADY_USED");
+      license.mintAccessTokens(0);
+    }
 
+        
+    function testSetAccessTokenExpiryTime() public {
+        startHoax(alice);                           
+        console.log(block.timestamp);               
+        uint256 expiryTime = 1000;     
+        accessToken.setExpiryTime(expiryTime);      
+        assertEq(license.ownerOf(0), alice);
+
+        
+        
+        
+        license.mintAccessTokens(0);
+        (uint256 expiryDate,,) = accessToken.getTokenData(0);
+        console.log(expiryDate);
+        // assertFalse(accessToken.isExpired(0));
+        // cheats.warp(block.timestamp+expiryTime);    
+        // console.log(block.timestamp);
+        // assertTrue(accessToken.isExpired(0)); 
+    }
+    
+
+    function testLicenseTransferPreserveAllRights() public {
+        hoax(alice);
+        license.safeTransferFrom(alice, bob, 0);
+        assertFalse(wholeAuthorityModule.canCall(bob, address(accessToken), bytes4(abi.encodeWithSignature("setMaxSupply(uint256)"))));
+        assertFalse(wholeAuthorityModule.canCall(bob, address(accessToken), bytes4(abi.encodeWithSignature("setExpiryTime(uint256)"))));
+        assertFalse(wholeAuthorityModule.canCall(bob, address(accessToken), bytes4(abi.encodeWithSignature("setPrice(uint256)"))));
+        assertFalse(wholeAuthorityModule.canCall(bob, address(accessToken), bytes4(abi.encodeWithSignature("mint(uint256)"))));
+        assertFalse(wholeAuthorityModule.canCall(address(license), address(accessToken), bytes4(abi.encodeWithSignature("mint(uint256)"))));
+        
+        assertFalse(wholeAuthorityModule.canCall(alice,  address(accessToken), bytes4(abi.encodeWithSignature("mint(uint256)"))));
+    }
+
+    function testLicenseSalePreserveAllRights() public {
+        hoax(alice);
+        license.setApprovalForAll(bob, true);
+        hoax(bob, 100 ether);
+        license.buy{value:0.1 ether}(0);
+        assertFalse(wholeAuthorityModule.canCall(bob, address(accessToken), bytes4(abi.encodeWithSignature("setMaxSupply(uint256)"))));
+        assertFalse(wholeAuthorityModule.canCall(bob, address(accessToken), bytes4(abi.encodeWithSignature("setExpiryTime(uint256)"))));
+        assertFalse(wholeAuthorityModule.canCall(bob, address(accessToken), bytes4(abi.encodeWithSignature("setPrice(uint256)"))));
+        assertFalse(wholeAuthorityModule.canCall(bob, address(accessToken), bytes4(abi.encodeWithSignature("mint(uint256)"))));
+        assertFalse(wholeAuthorityModule.canCall(address(license), address(accessToken), bytes4(abi.encodeWithSignature("mint(uint256)"))));
+
+        assertFalse(wholeAuthorityModule.canCall(alice,  address(accessToken), bytes4(abi.encodeWithSignature("mint(uint256)"))));
+    }
+    
+
+   
+
+    // function testBuyDegenerateAccessTokenPath1() public {
+      
+    //   // 1. The license holder mints accessTokens
+    //   hoax(alice);
+    //   accessToken.mint(1);
+    //   assertEq(accessToken.ownerOf(1), alice);
+    //   assertEq(accessToken.ownerOf(2), alice);
+    //   assertEq(accessToken.ownerOf(100), alice);
+      
+      
+    // //   2. She then sells the license 
+    //   hoax(alice);
+    //   license.setApprovalForAll(bob, true);
+    //   hoax(bob);
+    //   license.buy{value:0.1 ether}(1);
+    
+
+    // //   assertEq(accessToken.ownerOf(1),   bob);
+    // //   assertEq(accessToken.ownerOf(2),   bob);
+    // //   assertEq(accessToken.ownerOf(100), bob);
+
+    // //   3. The new owner offers the accessTokens for sale
+    // //   hoax(bob);
+    // //   accessToken.setApprovalForAll(carol, true);
+    // //   
+    // //   4. Someone buys it
+    // //   hoax(carol);
+    // //   assertEq(accessToken.ownerOf(1), bob);
+    // // //   accessToken.buy{value:0.01 ether}(1);
+
+    // }
+    
+    
 
 }
