@@ -48,8 +48,8 @@ contract License is ERC721, Auth {
 
     function getAccessToken(uint256 licenseId, uint256 index) view public returns (uint256 id) {
       uint256[] memory accessTokensHeld = getLicenseData[licenseId].accessTokensHeld;
-      uint256 id = accessTokensHeld[index];
-      return id;
+      uint256 tokenId = accessTokensHeld[index];
+      return tokenId;
     }
 
     function getAmountLeft(uint256 licenseId) view public returns (uint256 amountLeft) {
@@ -66,17 +66,21 @@ contract License is ERC721, Auth {
     /// @notice Emitted after a new price is set.
     /// @param newPrice New price of the token.
     event PriceUpdated(uint256 newPrice);
+
     /// @notice Emitted after a new expiry time is set.
     /// @param newTime New expiry time of the token.
     event ExpiryTimeUpdated(uint256 newTime); 
+
     /// @notice Emitted after a new max supply is set.
     /// @param newMaxSupply New max supply of the token.
     event MaxSupplyUpdated(uint256 newMaxSupply);
+
     /// @notice Emitted after a token is bought.
     /// @param id Id of token which was sold.
     /// @param buyer address of the buyer of the token.
     event TokenSold(uint256 id, address buyer);
 
+    event Log(string func, address sender, uint256 value, bytes data);
 
     event AccessTokenSet (AccessToken accessToken); 
 
@@ -84,7 +88,9 @@ contract License is ERC721, Auth {
     mapping(uint256 => LicenseData) public getLicenseData;
 
     mapping(uint256 => uint256) public licenseToAccessTokenBalance;
+
     mapping(uint256 => bool) public licenseUsed;
+
     mapping(uint256 => TokenData) public getTokenData;
 
 
@@ -114,17 +120,15 @@ contract License is ERC721, Auth {
       masterNFT = _masterNFT;
     } 
     
-    
-    
-    
 
     function setAccessToken(AccessToken _accessToken) public {
-      require(msg.sender == owner);
+      require(msg.sender == owner, "NOT_OWNER");
       accessToken = _accessToken;
       emit AccessTokenSet(accessToken);
     }
     
     function mintAccessTokens (uint256 licenseId) public {
+
       require(msg.sender == ownerOf(licenseId), "NOT_OWNER_OF_LICENSEID");
       require(licenseUsed[licenseId] != true, "LICENSE_ALREADY_USED");
   
@@ -132,18 +136,13 @@ contract License is ERC721, Auth {
       // uint256[] storage accessTokensHeld;
 
       unchecked {
+
           uint256 accessTokensToBeMinted = accessToken.maxSupplyPerLicense();
+
           for (uint256 i = 0; i < accessTokensToBeMinted; i++ ) {
               
-              // uint256 id = accessToken.mint(address(this));
               uint256 id = accessToken.mint(licenseId, address(this));
               
-              // accessToken.mint(id, msg.sender);
-              // Sets expiry date and address of minter.
-              // getTokenData[id].expiryDate = block.timestamp + accessToken.expiryTime();
-              // getTokenData[id].minter = msg.sender;
-              // getTokenData[id].licenseId = licenseId; 
-              // accessTokensHeld.push(id);
               accessTokensHeld[i] = id;
           }
       }
@@ -156,26 +155,21 @@ contract License is ERC721, Auth {
       
       uint256[] storage accessTokensHeld = getLicenseData[licenseId].accessTokensHeld;
       uint256 id = accessTokensHeld[accessTokensHeld.length-1];
-      // uint256 id = accessTokensHeld[accessTokensHeld.length-2];
-      // uint256 id = 100;
-      // uint256 id = accessTokensHeld[0]; 
+
       accessToken.buy{value: msg.value}(id, msg.sender);
       accessTokensHeld.pop();
+
       getLicenseData[licenseId].accessTokensHeld = accessTokensHeld;
       withdrawableBalance[licenseId] += msg.value/2;
-
     }
+
     mapping (uint256 => uint256) public withdrawableBalance;
 
-     // Function to receive Ether. msg.data must be empty
-    receive() external payable {}
 
-    // Fallback function is called when msg.data is not empty
-    fallback() external payable {}
-
-    // Function to withdraw all Ether from this contract.
     function withdraw(uint256 licenseId) public {
+
         require(msg.sender == ownerOf(licenseId), "NOT_OWNER_OF_LICENSE");
+
         // get the amount of Ether stored in this contract
         uint amount = withdrawableBalance[licenseId];
 
@@ -197,7 +191,7 @@ contract License is ERC721, Auth {
           for (uint256 i = 0; i < amount; i++) {
               uint256 id = totalSupply;
               _mint(msg.sender, id);
-              address minter = masterNFT.ownerOf(1);
+
               // Sets expiry date and address of minter.
               getLicenseData[id].expiryDate = block.timestamp + expiryTime;
               getLicenseData[id].minter = msg.sender;
@@ -210,29 +204,18 @@ contract License is ERC721, Auth {
     
     /// @notice Buys a specified token Id.
     function buy(uint256 licenseId) external payable {
+
       require(lastSold <= totalSupply, "MAX_SUPPLY_REACHED");
       require(msg.value == price, "INCORRECT_PRICE");
       require(isSold[licenseId] == false, "ALREADY_SOLD");
-      
-      // allocate half the funds to contract owner and other half to license holder who minted the token.
-      // funds are sent to the MasterNFT contract directly, allowing the MasterNFT holder to accumulate and withdraw at his pleasure.
-      (bool sent, bytes memory data) = payable(address(masterNFT)).call{value:msg.value}("");
+
+      (bool sent, ) = payable(address(masterNFT)).call{value:msg.value}("");
+
       require(sent, "Failed to send Ether!");
-      // transferFrom(getLicenseData[id].minter, msg.sender, id);
+
       transferFrom(ownerOf(licenseId), msg.sender, licenseId);
       emit TokenSold(lastSold, msg.sender);
-      
-      uint256[] memory accessTokensHeld = getLicenseData[licenseId].accessTokensHeld;
-
         
-      
-      // unchecked {
-      //   for (uint256 i = 0; i < accessTokensHeld.length; i++) {
-      //   // for (uint256 i = 0; i < licenseToAccessTokenBalance[licenseId]; i++) {
-      //     accessToken.transferFrom(address(this), msg.sender, getLicenseData[licenseId].accessTokensHeld[i]);
-      //     }
-      //   }
-      
       lastSold++;
     }
     
@@ -262,13 +245,6 @@ contract License is ERC721, Auth {
 
         delete getApproved[licenseId];
         
-        // uint256[] memory accessTokensHeld = getLicenseData[licenseId].accessTokensHeld;
-// 
-        // 
-        // for (uint256 i = 0; i < accessTokensHeld.length; i++) {
-          // accessToken.transferFrom(address(this), msg.sender, getLicenseData[licenseId].accessTokensHeld[i]);
-          // }
-        // licenseToAccessTokenBalance[licenseId] = 0;
         emit Transfer(from, to, licenseId);
     }
 
@@ -357,5 +333,13 @@ contract License is ERC721, Auth {
             bytes(baseURI).length > 0
                 ? string(abi.encodePacked(baseURI, string(abi.encodePacked(tokenId)), ".json"))
                 : "";
+    }
+
+    receive() external payable {
+      emit Log("receive", msg.sender, msg.value, ""); 
+    }
+
+    fallback() external payable {
+      emit Log("fallback", msg.sender, msg.value, msg.data);
     }
 }

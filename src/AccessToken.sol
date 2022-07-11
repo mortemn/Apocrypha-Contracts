@@ -91,28 +91,11 @@ contract AccessToken is ERC721, Auth {
         
     /// @notice Mints a specified amount of tokens if msg sender is a license holder. 
     /// @param id - the id of the accessToken minted.
-    /// @param to - the user that the accessToken is minte
-    
-    // function mint(address to) external requiresAuth returns (uint256 id) {
-    //   // require(totalSupply + amount <= maxSupply, "MAX_SUPPLY_REACHED");
-    //   // require(license.ownerOf(licenseId)== msg.sender, "NOT_OWNER_OF_LICENSE");
+    /// @param to - the user that the accessToken is minted.
+    function mint(uint256 id, address to) external returns (uint256) {
+      require(msg.sender == address(license), "UNAUTHORISED_ADDRESS");
                 
-    //   uint256 id = totalSupply ;
-    //   // uint256 id = totalSupply + 1;
-    //   _mint(msg.sender, id);
-    //   totalSupply++;    
-    //   return (id);
-
-    // }
-    function mint(uint256 licenseId, address to) external returns (uint256 id) {
-      // require(msg.sender==address(license));
-      // require(msg.sender==address(license));
-      // require(totalSupply + amount <= maxSupply, "MAX_SUPPLY_REACHED");
-      // require(license.ownerOf(licenseId)== msg.sender, "NOT_OWNER_OF_LICENSE");
-                
-      uint256 id = totalSupply ;
-      // uint256 id = totalSupply + 1;
-      _mint(msg.sender, id);
+      _mint(to, id);
       totalSupply++;    
       return (id);
 
@@ -126,20 +109,15 @@ contract AccessToken is ERC721, Auth {
       require(id < totalSupply, "DOES_NOT_EXIST");
       require(msg.value == price, "INCORRECT_PRICE");
       require(isSold[id] == false, "ALREADY_SOLD");
-      
-      uint256 licenseId = getTokenData[id].licenseId;
-   
 
       uint256 split = msg.value.mulDivDown(5, 10);
       
       isSold[id] = true;
 
       
-      (bool masterNFTHolderPaid, bytes memory masterNFTPaymentData) = payable(address(masterNFT)).call{value: split}("");      
-      (bool licenseHolderPaid, bytes memory licenseHolderPaymentData) = payable(address(license)).call{value: split}("");
+      (bool masterNFTHolderPaid, ) = payable(address(masterNFT)).call{value: split}("");      
+      (bool licenseHolderPaid, ) = payable(address(license)).call{value: split}("");
       
-      
-
       require(masterNFTHolderPaid, "Failed to send to MasterNFT!");
       require(licenseHolderPaid, "Failed to send to license holder!");
 
@@ -159,13 +137,6 @@ contract AccessToken is ERC721, Auth {
         (bool success, ) = payable(license.ownerOf(licenseId)).call{value: amount}("");
         require(success, "Failed to send Ether");
     }
-
-
-    // Function to receive Ether. msg.data must be empty
-    receive() external payable {}
-
-    // Fallback function is called when msg.data is not empty
-    fallback() external payable {}
 
     /// @notice Sets a new token expiry time.
     /// @param time New expiry time. 

@@ -41,14 +41,6 @@ contract WholeAuthorityModule is Authority {
     emit TokenAddressUpdated(accessToken);
   }
 
-  function getMasterNFT() public view returns (MasterNFT masterNFT) {
-    return masterNFT;
-  }
-
-  function getLicense() public view returns (License) {
-    return license;
-  }
-
   function userHasLicense(address _user) public view returns (bool) {
     License userLicense = license;
     bool hasValidLicense = userLicense.hasValidLicense(_user);
@@ -65,7 +57,7 @@ contract WholeAuthorityModule is Authority {
     if (target == address(accessToken)) {
         return (
                 (
-                  masterNFT.hasMasterNFT(user) && ( functionSig == bytes4(abi.encodeWithSignature("setMaxSupply(uint256)")) || 
+                  masterNFT.balanceOf(user) != 0 && ( functionSig == bytes4(abi.encodeWithSignature("setMaxSupply(uint256)")) || 
                                                   functionSig == bytes4(abi.encodeWithSignature("setExpiryTime(uint256)")) ||
                                                   functionSig == bytes4(abi.encodeWithSignature("setPrice(uint256)")))
                 ) 

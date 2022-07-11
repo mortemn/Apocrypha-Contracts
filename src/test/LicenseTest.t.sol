@@ -62,7 +62,7 @@ contract LicenseTest is Test {
         factory.setWholeAuthorityModuleAccessToken(wholeAuthorityModule, accessToken);
         factory.setAccessTokenOfLicense(license, accessToken);
         hoax(alice);
-        masterNFT.mint(alice);
+        masterNFT.mint(alice, alice, 10);
         hoax(alice);
         license.mint(1);
         

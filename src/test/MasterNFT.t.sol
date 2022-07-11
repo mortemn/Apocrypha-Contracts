@@ -67,7 +67,7 @@ contract MasterNFTTest is Test {
         
 
         hoax(alice);
-        masterNFT.mint(alice);
+        masterNFT.mint(alice, alice, 10);
 
     }
 
@@ -95,8 +95,8 @@ contract MasterNFTTest is Test {
 
     function testMintMasterNFTIsUnique() public {
         hoax(alice);
-        vm.expectRevert("Unique Master NFT already minted!");   // once the MasterNFT is minted she cannot mint another
-        masterNFT.mint(alice);        
+        vm.expectRevert("ALREADY_MINTED");   // once the MasterNFT is minted she cannot mint another
+        masterNFT.mint(alice, alice, 10);        
     }
 
     function testMasterNFTHolderCanTransfer() public {
@@ -136,8 +136,8 @@ contract MasterNFTTest is Test {
         license.mint(1);
 
         hoax(bob);
-        vm.expectRevert("Unique Master NFT already minted!");   // once the MasterNFT is minted, Bob cannot mint another.
-        masterNFT.mint(bob);
+        vm.expectRevert("ALREADY_MINTED");   // once the MasterNFT is minted, Bob cannot mint another.
+        masterNFT.mint(bob, bob, 10);
     }
 
 
@@ -227,7 +227,7 @@ contract MasterNFTTest is Test {
         hoax(alice,0);
         license.setApprovalForAll(bob, true);
 
-        (uint256 expiryDate, address minter,) = license.getLicenseData(1);
+        (,address minter,) = license.getLicenseData(1);
         assertEq(minter, alice);
         
         console.log("bob's balance is:", bob.balance);
@@ -313,7 +313,7 @@ contract MasterNFTTest is Test {
         license.buy{value:0.1 ether}(0);
         assertEq(license.ownerOf(0), bob);
         hoax(alice,0);
-        masterNFT.withdraw();
+        masterNFT.withdraw(address(masterNFT).balance);
         assertEq(alice.balance, 0.1 ether);
     }
 
@@ -327,7 +327,7 @@ contract MasterNFTTest is Test {
         assertEq(license.ownerOf(0), bob);
         hoax(carol,1 ether);
         vm.expectRevert("UNAUTHORIZED");
-        masterNFT.withdraw();
+        masterNFT.withdraw(address(masterNFT).balance);
         assertEq(address(masterNFT).balance, 0.1 ether);
     }
 }
