@@ -133,15 +133,17 @@ contract License is ERC721, Auth {
       require(licenseUsed[licenseId] != true, "LICENSE_ALREADY_USED");
   
       uint256[] memory accessTokensHeld = new uint256[](accessToken.maxSupplyPerLicense());
-      // uint256[] storage accessTokensHeld;
+      
+      uint256 accesssTokenTotalSupply = accessToken.totalSupply();
 
       unchecked {
 
           uint256 accessTokensToBeMinted = accessToken.maxSupplyPerLicense();
+          
 
           for (uint256 i = 0; i < accessTokensToBeMinted; i++ ) {
               
-              uint256 id = accessToken.mint(licenseId, address(this));
+              uint256 id = accessToken.mint(accesssTokenTotalSupply + i, address(this));
               
               accessTokensHeld[i] = id;
           }
