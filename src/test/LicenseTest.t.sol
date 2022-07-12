@@ -77,7 +77,8 @@ contract LicenseTest is Test {
     }
 
     function testMintAccessToken() public {
-      hoax(alice);                                  
+      hoax(alice);             
+    
       license.mintAccessTokens(0);                              // Alice has already been given a license in the setUp
       assertEq(license.licenseToAccessTokenBalance(0), 100);    // 100 is the max supply of accesstokens each license can mint 
       assertEq(accessToken.balanceOf(address(license)), 100);
@@ -252,41 +253,4 @@ contract LicenseTest is Test {
         assertFalse(wholeAuthorityModule.canCall(alice,  address(accessToken), bytes4(abi.encodeWithSignature("mint(uint256)"))));
     }
     
-
-   
-
-    // function testBuyDegenerateAccessTokenPath1() public {
-      
-    //   // 1. The license holder mints accessTokens
-    //   hoax(alice);
-    //   accessToken.mint(1);
-    //   assertEq(accessToken.ownerOf(1), alice);
-    //   assertEq(accessToken.ownerOf(2), alice);
-    //   assertEq(accessToken.ownerOf(100), alice);
-      
-      
-    // //   2. She then sells the license 
-    //   hoax(alice);
-    //   license.setApprovalForAll(bob, true);
-    //   hoax(bob);
-    //   license.buy{value:0.1 ether}(1);
-    
-
-    // //   assertEq(accessToken.ownerOf(1),   bob);
-    // //   assertEq(accessToken.ownerOf(2),   bob);
-    // //   assertEq(accessToken.ownerOf(100), bob);
-
-    // //   3. The new owner offers the accessTokens for sale
-    // //   hoax(bob);
-    // //   accessToken.setApprovalForAll(carol, true);
-    // //   
-    // //   4. Someone buys it
-    // //   hoax(carol);
-    // //   assertEq(accessToken.ownerOf(1), bob);
-    // // //   accessToken.buy{value:0.01 ether}(1);
-
-    // }
-    
-    
-
 }
